@@ -30,7 +30,8 @@ export default function QuizPage({ subject, language, onBack }) {
       ? 'All questions must be "type_answer" type (no options needed, just correct_answer as a short word or phrase).'
       : 'Mix of "multiple_choice" and "type_answer" types evenly.';
 
-    const prompt = `Generate ${cfg.count} quiz questions about ${subjectLabels[subject]} at ${cfg.difficulty} difficulty level.
+    const topicLine = cfg.topic ? ` specifically about "${cfg.topic}"` : "";
+    const prompt = `Generate ${cfg.count} quiz questions about ${subjectLabels[subject]}${topicLine} at ${cfg.difficulty} difficulty level.
 ${formatInstruction}
 
 Respond in ${language} language for all text (questions, options, explanations).

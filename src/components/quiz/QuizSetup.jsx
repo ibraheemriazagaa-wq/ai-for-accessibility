@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Zap, Brain, Trophy, List, PenLine, CheckSquare } from "lucide-react";
 
 const difficulties = [
@@ -21,6 +22,7 @@ export default function QuizSetup({ subject, onStart }) {
   const [difficulty, setDifficulty] = useState("medium");
   const [format, setFormat] = useState("multiple_choice");
   const [count, setCount] = useState(10);
+  const [topic, setTopic] = useState("");
 
   return (
     <motion.div
@@ -102,8 +104,20 @@ export default function QuizSetup({ subject, onStart }) {
         </div>
       </div>
 
+      {/* Topic */}
+      <div className="mb-8">
+        <h3 className="font-heading font-semibold text-sm text-foreground mb-1">Specific Topic <span className="text-muted-foreground font-normal">(optional)</span></h3>
+        <p className="text-xs text-muted-foreground mb-3">Leave blank for a general quiz, or specify a topic e.g. "Photosynthesis", "World War II"</p>
+        <Input
+          value={topic}
+          onChange={(e) => setTopic(e.target.value)}
+          placeholder={`e.g. topic within ${subject}...`}
+          className="rounded-xl bg-card"
+        />
+      </div>
+
       <Button
-        onClick={() => onStart({ difficulty, format, count })}
+        onClick={() => onStart({ difficulty, format, count, topic: topic.trim() })}
         className="w-full h-12 rounded-xl font-semibold text-base"
       >
         Start Quiz 🚀
