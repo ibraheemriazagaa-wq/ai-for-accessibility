@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, Sparkles, ArrowLeft, Trash2, ClipboardList } from "lucide-react";
+import { BookOpen, Sparkles, ArrowLeft, Trash2, ClipboardList, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SubjectCard from "@/components/tutor/SubjectCard";
 import LanguageSelector from "@/components/tutor/LanguageSelector";
@@ -9,6 +9,7 @@ import ChatMessage from "@/components/tutor/ChatMessage";
 import ChatInput from "@/components/tutor/ChatInput";
 import TypingIndicator from "@/components/tutor/TypingIndicator";
 import QuizPage from "@/pages/QuizPage";
+import StudyPlan from "@/pages/StudyPlan";
 
 const subjects = [
   "english", "math", "biology", "chemistry", "physics",
@@ -33,7 +34,7 @@ export default function Home() {
   const [language, setLanguage] = useState("english");
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [mode, setMode] = useState("tutor"); // "tutor" | "quiz"
+  const [mode, setMode] = useState("tutor"); // "tutor" | "quiz" | "studyplan"
   const chatEndRef = useRef(null);
 
   useEffect(() => {
@@ -136,15 +137,19 @@ Student's question: ${question}`;
             ))}
           </motion.div>
 
-          {/* Footer hint */}
-          <motion.p
+          {/* Study Plan CTA */}
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="text-center text-muted-foreground text-sm mt-10"
+            className="text-center mt-10"
           >
-            Tap a subject to start a tutoring session →
-          </motion.p>
+            <p className="text-muted-foreground text-sm mb-3">Tap a subject to start a tutoring session →</p>
+            <Button variant="outline" onClick={() => setMode("studyplan")} className="rounded-xl gap-2 text-sm">
+              <CalendarDays className="w-4 h-4" />
+              Generate a Study Plan
+            </Button>
+          </motion.div>
         </div>
       </div>
     );
@@ -159,6 +164,11 @@ Student's question: ${question}`;
         onBack={() => setMode("tutor")}
       />
     );
+  }
+
+  // Study plan mode
+  if (mode === "studyplan") {
+    return <StudyPlan onBack={() => setMode("tutor")} />;
   }
 
   // Chat view
@@ -188,6 +198,15 @@ Student's question: ${question}`;
             >
               <ClipboardList className="w-3.5 h-3.5" />
               Quiz
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMode("studyplan")}
+              className="rounded-xl gap-1.5 text-xs font-semibold"
+            >
+              <CalendarDays className="w-3.5 h-3.5" />
+              Plan
             </Button>
             {messages.length > 0 && (
               <Button variant="ghost" size="icon" onClick={handleClearChat} className="rounded-xl text-muted-foreground">
