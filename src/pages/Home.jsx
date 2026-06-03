@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, Sparkles, ArrowLeft, Trash2 } from "lucide-react";
+import { BookOpen, Sparkles, ArrowLeft, Trash2, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SubjectCard from "@/components/tutor/SubjectCard";
 import LanguageSelector from "@/components/tutor/LanguageSelector";
 import ChatMessage from "@/components/tutor/ChatMessage";
 import ChatInput from "@/components/tutor/ChatInput";
 import TypingIndicator from "@/components/tutor/TypingIndicator";
+import QuizPage from "@/pages/QuizPage";
 
 const subjects = [
   "english", "math", "biology", "chemistry", "physics",
@@ -32,6 +33,7 @@ export default function Home() {
   const [language, setLanguage] = useState("english");
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [mode, setMode] = useState("tutor"); // "tutor" | "quiz"
   const chatEndRef = useRef(null);
 
   useEffect(() => {
@@ -46,6 +48,7 @@ export default function Home() {
   const handleBack = () => {
     setSelectedSubject(null);
     setMessages([]);
+    setMode("tutor");
   };
 
   const handleClearChat = () => {
@@ -147,6 +150,17 @@ Student's question: ${question}`;
     );
   }
 
+  // Quiz mode
+  if (selectedSubject && mode === "quiz") {
+    return (
+      <QuizPage
+        subject={selectedSubject}
+        language={language}
+        onBack={() => setMode("tutor")}
+      />
+    );
+  }
+
   // Chat view
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -166,6 +180,15 @@ Student's question: ${question}`;
           </div>
           <div className="flex items-center gap-2">
             <LanguageSelector value={language} onChange={setLanguage} />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMode("quiz")}
+              className="rounded-xl gap-1.5 text-xs font-semibold"
+            >
+              <ClipboardList className="w-3.5 h-3.5" />
+              Quiz
+            </Button>
             {messages.length > 0 && (
               <Button variant="ghost" size="icon" onClick={handleClearChat} className="rounded-xl text-muted-foreground">
                 <Trash2 className="w-4 h-4" />
