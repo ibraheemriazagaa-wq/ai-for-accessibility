@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, Sparkles, ArrowLeft, Trash2, ClipboardList, CalendarDays } from "lucide-react";
+import { BookOpen, Sparkles, ArrowLeft, Trash2, ClipboardList, CalendarDays, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SubjectCard from "@/components/tutor/SubjectCard";
 import LanguageSelector from "@/components/tutor/LanguageSelector";
@@ -35,7 +35,15 @@ export default function Home() {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [mode, setMode] = useState("tutor"); // "tutor" | "quiz" | "studyplan"
+  const [ttsEnabled, setTtsEnabled] = useState(false);
   const chatEndRef = useRef(null);
+
+  const speak = (text) => {
+    if (!ttsEnabled) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    window.speechSynthesis.speak(utterance);
+  };
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -47,12 +55,14 @@ export default function Home() {
   };
 
   const handleBack = () => {
+    window.speechSynthesis.cancel();
     setSelectedSubject(null);
     setMessages([]);
     setMode("tutor");
   };
 
   const handleClearChat = () => {
+    window.speechSynthesis.cancel();
     setMessages([]);
   };
 
@@ -78,6 +88,7 @@ Student's question: ${question}`;
     const response = await base44.integrations.Core.InvokeLLM({ prompt });
     setMessages((prev) => [...prev, { role: "assistant", content: response }]);
     setIsLoading(false);
+    speak(response);
   };
 
   // Subject selection view
@@ -190,6 +201,16 @@ Student's question: ${question}`;
           </div>
           <div className="flex items-center gap-2">
             <LanguageSelector value={language} onChange={setLanguage} />
+            <Button
+              variant={ttsEnabled ? "default" : "outline"}
+              size="sm"
+              onClick={() => { setTtsEnabled((v) => !v); window.speechSynthesis.cancel(); }}
+              className="rounded-xl gap-1.5 text-xs font-semibold"
+              title={ttsEnabled ? "Turn off text-to-speech" : "Turn on text-to-speech"}
+            >
+              {ttsEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+              TTS
+            </Button>
             <Button
               variant="outline"
               size="sm"
