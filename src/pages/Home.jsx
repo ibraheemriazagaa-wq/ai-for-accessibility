@@ -71,17 +71,24 @@ export default function Home() {
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
+    const detailRequest = /more detail|explain more|elaborate|in depth|deeper|expand|tell me more|explain further|can you explain|detailed|thoroughly|fully explain/i.test(question);
+
     const prompt = `You are a friendly AI tutor for ${subjectLabels[selectedSubject]}.
 
 STRICT RULES:
 - Respond ENTIRELY in ${language} language.
-- Use VERY simple words — explain like you're talking to a 10-year-old.
-- Keep your answer SHORT: 3–5 sentences max for simple questions, slightly more for complex ones.
-- Always use 1 relatable real-life example or analogy.
-- No jargon. If you must use a technical word, immediately explain it in plain language.
-- Use bullet points only when listing steps or multiple items — max 4 bullets.
+- Use simple, clear language appropriate for a student.
+- Always use relatable real-life examples or analogies.
+- No unexplained jargon. If you use a technical term, immediately explain it.
 - End with ONE short encouraging sentence.
-- Never write long paragraphs.
+${detailRequest ? `- The student is asking for a DETAILED explanation. Provide a thorough, comprehensive response:
+  * Cover all key concepts, sub-concepts, and nuances
+  * Use multiple examples and analogies
+  * Use numbered steps or bullet points where helpful
+  * Include relevant background context
+  * Be as thorough as needed — do NOT limit length` : `- Keep your answer SHORT: 3–5 sentences max for simple questions.
+- Use bullet points only when listing steps or multiple items — max 4 bullets.
+- Never write long paragraphs.`}
 
 Student's question: ${question}`;
 
