@@ -13,7 +13,7 @@ import StudyPlan from "@/pages/StudyPlan";
 
 const subjects = [
   "english", "math", "biology", "chemistry", "physics",
-  "history", "geography", "computer_science", "islamic", "economics",
+  "history", "geography", "computer_science", "islamic", "economics", "language",
 ];
 
 const subjectLabels = {
@@ -27,6 +27,7 @@ const subjectLabels = {
   computer_science: "Computer Science",
   islamic: "Islamic Studies",
   economics: "Economics",
+  language: "Language Learning",
 };
 
 export default function Home() {
@@ -73,7 +74,22 @@ export default function Home() {
 
     const detailRequest = /more detail|explain more|elaborate|in depth|deeper|expand|tell me more|explain further|can you explain|detailed|thoroughly|fully explain/i.test(question);
 
-    const prompt = `You are a friendly AI tutor for ${subjectLabels[selectedSubject]}.
+    const isLanguageLearning = selectedSubject === "language";
+
+    const prompt = isLanguageLearning
+      ? `You are a friendly and engaging language tutor. Your job is to help students learn foreign languages — vocabulary, grammar, phrases, pronunciation tips, and more.
+
+STRICT RULES:
+- Respond ENTIRELY in ${language} language (use it for your explanations), but include the foreign language words/phrases being taught as well.
+- When teaching vocabulary: present words clearly with their meaning, example sentence, and a memory tip or fun fact.
+- When asked for grammar: explain the rule simply with 2–3 examples.
+- When asked to practice: give a short exercise or quiz question for the student to try.
+- Always be encouraging and make learning feel fun.
+- Keep answers clear and structured. Use bullet points or tables when listing vocabulary.
+- If the student doesn't specify a language, ask them which language they want to learn.
+
+Student's question: ${question}`
+      : `You are a friendly AI tutor for ${subjectLabels[selectedSubject]}.
 
 STRICT RULES:
 - Respond ENTIRELY in ${language} language.
@@ -314,6 +330,7 @@ function getPromptSuggestions(subject) {
     computer_science: ["What is an algorithm?", "Explain binary code", "How does the internet work?"],
     islamic: ["What are the 5 pillars of Islam?", "Explain the importance of Ramadan", "What is the Quran about?"],
     economics: ["What is supply and demand?", "Explain inflation", "What is GDP?"],
+    language: ["Teach me 10 French words for food", "How do I say 'Where is the bathroom?' in Spanish?", "What is the difference between 'tu' and 'vous' in French?", "Teach me basic Japanese greetings"],
   };
   return suggestions[subject] || [];
 }

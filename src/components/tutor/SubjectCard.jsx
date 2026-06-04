@@ -11,6 +11,7 @@ const subjectStyles = {
   computer_science: { gradient: "from-slate-600 to-gray-800", emoji: "💻" },
   islamic: { gradient: "from-green-600 to-emerald-700", emoji: "☪️" },
   economics: { gradient: "from-rose-500 to-pink-600", emoji: "📊" },
+  language: { gradient: "from-fuchsia-500 to-purple-600", emoji: "🗣️" },
 };
 
 const subjectLabels = {
@@ -24,6 +25,7 @@ const subjectLabels = {
   computer_science: "Computer Science",
   islamic: "Islamic Studies",
   economics: "Economics",
+  language: "Language Learning",
 };
 
 export default function SubjectCard({ subject, isSelected, onClick }) {
