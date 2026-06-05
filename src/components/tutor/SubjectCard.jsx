@@ -14,7 +14,6 @@ const subjectStyles = {
   language: { gradient: "from-fuchsia-500 to-purple-600", emoji: "🗣️" },
   art: { gradient: "from-pink-500 to-rose-600", emoji: "🎨" },
   music: { gradient: "from-violet-500 to-indigo-600", emoji: "🎵" },
-  literature: { gradient: "from-amber-500 to-yellow-600", emoji: "📚" },
   psychology: { gradient: "from-sky-500 to-cyan-600", emoji: "🧠" },
 };
 
@@ -32,7 +31,6 @@ const subjectLabels = {
   language: "Language Learning",
   art: "Art",
   music: "Music",
-  literature: "Literature",
   psychology: "Psychology",
 };
 

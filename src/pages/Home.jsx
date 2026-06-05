@@ -16,7 +16,7 @@ import VoiceChat from "@/components/tutor/VoiceChat";
 const subjects = [
   "english", "math", "biology", "chemistry", "physics",
   "history", "geography", "computer_science", "islamic", "economics",
-  "language", "art", "music", "literature", "psychology",
+  "language", "art", "music", "psychology",
 ];
 
 const subjectLabels = {
@@ -33,7 +33,6 @@ const subjectLabels = {
   language: "Language Learning",
   art: "Art",
   music: "Music",
-  literature: "Literature",
   psychology: "Psychology",
 };
 
@@ -350,7 +349,6 @@ function getPromptSuggestions(subject) {
     language: ["Teach me 10 French words for food", "How do I say 'Where is the bathroom?' in Spanish?", "What is the difference between 'tu' and 'vous' in French?", "Teach me basic Japanese greetings"],
     art: ["What are the elements of art?", "Explain impressionism", "What is the difference between oil and watercolor?"],
     music: ["What are the musical notes?", "Explain rhythm and beat", "What is music theory?"],
-    literature: ["What is a metaphor vs simile?", "Explain the hero's journey", "What makes a good narrative?"],
     psychology: ["What is Maslow's hierarchy of needs?", "Explain classical conditioning", "What is cognitive dissonance?"],
   };
   return suggestions[subject] || [];
