@@ -213,7 +213,7 @@ Student's question: ${question}`;
 
   // Test generator mode
   if (mode === "test") {
-    return <TestGenerator onBack={() => setMode("tutor")} />;
+    return <TestGenerator onBack={() => setMode("tutor")} autoGenerate />;
   }
 
   // Chat view

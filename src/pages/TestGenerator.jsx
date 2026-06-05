@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Loader2, Plus, Trash2, FileText, CheckSquare, List, PenLine } from "lucide-react";
@@ -32,9 +32,9 @@ const emptySection = () => ({
   count: 10,
 });
 
-export default function TestGenerator({ onBack }) {
+export default function TestGenerator({ onBack, autoGenerate = false }) {
   const [sections, setSections] = useState([emptySection()]);
-  const [phase, setPhase] = useState("setup"); // setup | loading | results
+  const [phase, setPhase] = useState("setup");
   const [testData, setTestData] = useState(null);
 
   const addSection = () => setSections((s) => [...s, emptySection()]);
@@ -42,10 +42,11 @@ export default function TestGenerator({ onBack }) {
   const updateSection = (id, key, val) =>
     setSections((s) => s.map((sec) => (sec.id === id ? { ...sec, [key]: val } : sec)));
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (sectionsOverride) => {
+    const activeSections = sectionsOverride || sections;
     setPhase("loading");
 
-    const sectionPrompts = sections.map((sec, i) =>
+    const sectionPrompts = activeSections.map((sec, i) =>
       `Section ${i + 1}: ${sec.subject}${sec.topic ? ` — Topic: "${sec.topic}"` : ""}, Difficulty: ${sec.difficulty}, Format: ${sec.format}, Questions: ${sec.count}`
     ).join("\n");
 
@@ -117,6 +118,10 @@ Return JSON:
     setTestData(result);
     setPhase("results");
   };
+
+  useEffect(() => {
+    if (autoGenerate) handleGenerate([emptySection()]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
