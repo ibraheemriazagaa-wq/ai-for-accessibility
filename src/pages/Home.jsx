@@ -10,10 +10,13 @@ import ChatInput from "@/components/tutor/ChatInput";
 import TypingIndicator from "@/components/tutor/TypingIndicator";
 import QuizPage from "@/pages/QuizPage";
 import StudyPlan from "@/pages/StudyPlan";
+import TestGenerator from "@/pages/TestGenerator";
+import VoiceChat from "@/components/tutor/VoiceChat";
 
 const subjects = [
   "english", "math", "biology", "chemistry", "physics",
-  "history", "geography", "computer_science", "islamic", "economics", "language",
+  "history", "geography", "computer_science", "islamic", "economics",
+  "language", "art", "music", "literature", "psychology",
 ];
 
 const subjectLabels = {
@@ -28,6 +31,10 @@ const subjectLabels = {
   islamic: "Islamic Studies",
   economics: "Economics",
   language: "Language Learning",
+  art: "Art",
+  music: "Music",
+  literature: "Literature",
+  psychology: "Psychology",
 };
 
 export default function Home() {
@@ -35,7 +42,7 @@ export default function Home() {
   const [language, setLanguage] = useState("english");
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [mode, setMode] = useState("tutor"); // "tutor" | "quiz" | "studyplan"
+  const [mode, setMode] = useState("tutor"); // "tutor" | "quiz" | "studyplan" | "test"
   const [ttsEnabled, setTtsEnabled] = useState(false);
   const chatEndRef = useRef(null);
 
@@ -179,9 +186,9 @@ Student's question: ${question}`;
             className="text-center mt-10"
           >
             <p className="text-muted-foreground text-sm mb-3">Tap a subject to start a tutoring session →</p>
-            <Button variant="outline" onClick={() => setMode("studyplan")} className="rounded-xl gap-2 text-sm">
-              <CalendarDays className="w-4 h-4" />
-              Generate a Study Plan
+            <Button variant="outline" onClick={() => setMode("test")} className="rounded-xl gap-2 text-sm">
+              <ClipboardList className="w-4 h-4" />
+              Generate a Test
             </Button>
           </motion.div>
         </div>
@@ -205,6 +212,11 @@ Student's question: ${question}`;
     return <StudyPlan onBack={() => setMode("tutor")} />;
   }
 
+  // Test generator mode
+  if (mode === "test") {
+    return <TestGenerator onBack={() => setMode("tutor")} />;
+  }
+
   // Chat view
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -224,6 +236,11 @@ Student's question: ${question}`;
           </div>
           <div className="flex items-center gap-2">
             <LanguageSelector value={language} onChange={setLanguage} />
+            <VoiceChat
+              onSend={handleSend}
+              isLoading={isLoading}
+              lastResponse={messages.filter(m => m.role === "assistant").at(-1)?.content || ""}
+            />
             <Button
               variant={ttsEnabled ? "default" : "outline"}
               size="sm"
@@ -331,6 +348,10 @@ function getPromptSuggestions(subject) {
     islamic: ["What are the 5 pillars of Islam?", "Explain the importance of Ramadan", "What is the Quran about?"],
     economics: ["What is supply and demand?", "Explain inflation", "What is GDP?"],
     language: ["Teach me 10 French words for food", "How do I say 'Where is the bathroom?' in Spanish?", "What is the difference between 'tu' and 'vous' in French?", "Teach me basic Japanese greetings"],
+    art: ["What are the elements of art?", "Explain impressionism", "What is the difference between oil and watercolor?"],
+    music: ["What are the musical notes?", "Explain rhythm and beat", "What is music theory?"],
+    literature: ["What is a metaphor vs simile?", "Explain the hero's journey", "What makes a good narrative?"],
+    psychology: ["What is Maslow's hierarchy of needs?", "Explain classical conditioning", "What is cognitive dissonance?"],
   };
   return suggestions[subject] || [];
 }
