@@ -130,12 +130,14 @@ export default function VoiceChat({ onSend, isLoading, lastResponse }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            onClick={handleClose}
           >
             <motion.div
               initial={{ opacity: 0, y: 40, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 40, scale: 0.95 }}
               className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md p-6 relative"
+              onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={handleClose}
