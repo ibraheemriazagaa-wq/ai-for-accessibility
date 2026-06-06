@@ -42,8 +42,8 @@ export default function TestGenerator({ onBack }) {
   const updateSection = (id, key, val) =>
     setSections((s) => s.map((sec) => (sec.id === id ? { ...sec, [key]: val } : sec)));
 
-  const handleGenerate = async (sectionsOverride) => {
-    const activeSections = sectionsOverride || sections;
+  const handleGenerate = async () => {
+    const activeSections = sections;
     setPhase("loading");
 
     const sectionPrompts = activeSections.map((sec, i) =>
