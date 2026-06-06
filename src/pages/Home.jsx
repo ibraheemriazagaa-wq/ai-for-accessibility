@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, Sparkles, ArrowLeft, Trash2, ClipboardList, CalendarDays, Volume2, VolumeX } from "lucide-react";
+import { BookOpen, Sparkles, ArrowLeft, Trash2, ClipboardList, CalendarDays, Volume2, VolumeX, BarChart2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SubjectCard from "@/components/tutor/SubjectCard";
 import LanguageSelector from "@/components/tutor/LanguageSelector";
@@ -12,6 +12,7 @@ import QuizPage from "@/pages/QuizPage";
 import StudyPlan from "@/pages/StudyPlan";
 import TestGenerator from "@/pages/TestGenerator";
 import VoiceChat from "@/components/tutor/VoiceChat";
+import Dashboard from "@/pages/Dashboard";
 
 const subjects = [
   "english", "math", "biology", "chemistry", "physics",
@@ -185,10 +186,16 @@ Student's question: ${question}`;
             className="text-center mt-10"
           >
             <p className="text-muted-foreground text-sm mb-3">💡 Press <strong>Generate a Test</strong> below, then choose a subject to go to the test page!</p>
-            <Button variant="outline" onClick={() => setMode("test")} className="rounded-xl gap-2 text-sm">
-              <ClipboardList className="w-4 h-4" />
-              Generate a Test
-            </Button>
+            <div className="flex flex-wrap justify-center gap-3">
+              <Button variant="outline" onClick={() => setMode("test")} className="rounded-xl gap-2 text-sm">
+                <ClipboardList className="w-4 h-4" />
+                Generate a Test
+              </Button>
+              <Button variant="outline" onClick={() => setMode("dashboard")} className="rounded-xl gap-2 text-sm">
+                <BarChart2 className="w-4 h-4" />
+                My Progress
+              </Button>
+            </div>
           </motion.div>
         </div>
       </div>
@@ -214,6 +221,11 @@ Student's question: ${question}`;
   // Test generator mode
   if (mode === "test") {
     return <TestGenerator onBack={() => setMode("tutor")} />;
+  }
+
+  // Dashboard mode
+  if (mode === "dashboard") {
+    return <Dashboard onBack={() => setMode("tutor")} />;
   }
 
   // Chat view

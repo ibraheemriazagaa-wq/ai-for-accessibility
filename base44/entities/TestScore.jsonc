@@ -1,0 +1,40 @@
+{
+  "name": "TestScore",
+  "type": "object",
+  "properties": {
+    "subject": {
+      "type": "string",
+      "description": "The subject of the test"
+    },
+    "topic": {
+      "type": "string",
+      "description": "Optional topic within the subject"
+    },
+    "difficulty": {
+      "type": "string",
+      "description": "Difficulty level of the test"
+    },
+    "score": {
+      "type": "number",
+      "description": "Number of correct answers"
+    },
+    "total": {
+      "type": "number",
+      "description": "Total number of questions"
+    },
+    "percentage": {
+      "type": "number",
+      "description": "Score as a percentage"
+    },
+    "test_title": {
+      "type": "string",
+      "description": "Title of the test"
+    }
+  },
+  "required": [
+    "subject",
+    "score",
+    "total",
+    "percentage"
+  ]
+}

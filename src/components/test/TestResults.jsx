@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp, RotateCcw, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { base44 } from "@/api/base44Client";
 
 export default function TestResults({ testData, onReset }) {
   const [answers, setAnswers] = useState({});
@@ -21,7 +22,28 @@ export default function TestResults({ testData, onReset }) {
   const totalQuestions = (testData.sections || []).reduce((sum, s) => sum + (s.questions?.length || 0), 0);
   const answeredCount = Object.keys(answers).length;
 
-  const handleSubmit = () => setSubmitted(true);
+  const handleSubmit = async () => {
+    setSubmitted(true);
+    // Calculate per-section scores and save each
+    const sections = testData.sections || [];
+    for (const [si, sec] of sections.entries()) {
+      const sectionTotal = sec.questions?.length || 0;
+      if (sectionTotal === 0) continue;
+      const sectionScore = (sec.questions || []).filter((q, qi) => {
+        const a = answers[`${si}-${qi}`] || "";
+        return a.trim().toLowerCase() === q.correct_answer.trim().toLowerCase();
+      }).length;
+      base44.entities.TestScore.create({
+        subject: sec.subject,
+        topic: sec.topic || "",
+        difficulty: sec.difficulty || "",
+        score: sectionScore,
+        total: sectionTotal,
+        percentage: Math.round((sectionScore / sectionTotal) * 100),
+        test_title: testData.title || "Custom Test",
+      });
+    }
+  };
 
   const score = submitted
     ? (testData.sections || []).reduce((total, sec, si) =>
