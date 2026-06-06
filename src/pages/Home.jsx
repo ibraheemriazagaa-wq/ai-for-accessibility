@@ -184,7 +184,7 @@ Student's question: ${question}`;
             transition={{ delay: 0.5 }}
             className="text-center mt-10"
           >
-            <p className="text-muted-foreground text-sm mb-3">Press a subject below to start a tutoring session based on what you want to learn!</p>
+            <p className="text-muted-foreground text-sm mb-3">💡 Press <strong>Generate a Test</strong> below, then choose a subject to go to the test page!</p>
             <Button variant="outline" onClick={() => setMode("test")} className="rounded-xl gap-2 text-sm">
               <ClipboardList className="w-4 h-4" />
               Generate a Test
