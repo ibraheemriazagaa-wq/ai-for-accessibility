@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Loader2, Plus, Trash2, FileText, CheckSquare, List, PenLine } from "lucide-react";
@@ -32,7 +32,7 @@ const emptySection = () => ({
   count: 10,
 });
 
-export default function TestGenerator({ onBack, autoGenerate = false }) {
+export default function TestGenerator({ onBack }) {
   const [sections, setSections] = useState([emptySection()]);
   const [phase, setPhase] = useState("setup");
   const [testData, setTestData] = useState(null);
@@ -118,10 +118,6 @@ Return JSON:
     setTestData(result);
     setPhase("results");
   };
-
-  useEffect(() => {
-    if (autoGenerate) handleGenerate([emptySection()]);
-  }, []);
 
   return (
     <div className="min-h-screen bg-background">
