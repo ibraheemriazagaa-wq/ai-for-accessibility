@@ -54,41 +54,36 @@ const PLAN_JSON_SCHEMA = {
 };
 
 export default function StudyPlan({ onBack }) {
-  const [phase, setPhase] = useState("mode"); // mode | subject-select | setup | loading | plan
-  const [planMode, setPlanMode] = useState(null); // "automatic" | "manual"
+  // phases: subject-select | mode-select | setup | loading | plan
+  const [phase, setPhase] = useState("subject-select");
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [plan, setPlan] = useState(null);
   const [config, setConfig] = useState(null);
 
-  const handleModeSelect = (m) => {
-    setPlanMode(m);
-    if (m === "automatic") {
-      setPhase("subject-select");
-    } else {
-      setPhase("setup");
-    }
+  const handleSubjectSelect = (subject) => {
+    setSelectedSubject(subject);
+    setPhase("mode-select");
   };
 
-  const handleSubjectSelect = async (subject) => {
-    setSelectedSubject(subject);
+  const handleAutomatic = async () => {
     setPhase("loading");
 
-    const prompt = `You are an expert study planner. Create a comprehensive, automatic study plan for a student who wants to study ${subject}.
+    const prompt = `You are an expert study planner. Create a comprehensive, automatic study plan for a student studying ${selectedSubject}.
 
 Plan duration: 14 days
 Daily study time: 45 minutes
 
-Build a structured day-by-day ${subject} study plan that:
+Build a structured day-by-day ${selectedSubject} study plan that:
 - Starts from foundational concepts and builds progressively
-- Covers the most important topics in ${subject}
+- Covers the most important topics in ${selectedSubject}
 - Includes a variety of task types: reading, practice problems, review, etc.
 - Is realistic and motivating
 
-Group days into 2 weeks. For each day, provide 2-4 specific, actionable study tasks focused on ${subject}.
+Group days into 2 weeks. For each day, provide 2-4 specific, actionable study tasks focused on ${selectedSubject}.
 
-Return a JSON object with this structure:
+Return JSON with this structure:
 {
-  "title": "${subject} Study Plan",
+  "title": "${selectedSubject} Study Plan",
   "overview": "2-sentence overview of what this plan covers and the learning approach",
   "weeks": [
     {
@@ -112,7 +107,7 @@ Return a JSON object with this structure:
     });
 
     setPlan(result);
-    setConfig({ mode: "automatic", subject });
+    setConfig({ mode: "automatic", subject: selectedSubject });
     setPhase("plan");
   };
 
@@ -122,7 +117,7 @@ Return a JSON object with this structure:
 
     const prompt = `You are an expert study planner. Create a detailed, realistic study plan for a student.
 
-Subject: ${cfg.subject}
+Subject: ${selectedSubject}
 Goal: ${cfg.goal}
 Duration: ${cfg.duration} days
 Daily study time available: ${cfg.dailyTime} minutes
@@ -130,7 +125,7 @@ Current level: ${cfg.level}
 
 Generate a day-by-day study plan. Group days into weeks. For each day, provide 2-4 specific study tasks that are concise and actionable. Make the plan progressive (start easy, build up).
 
-Return a JSON object with this exact structure:
+Return a JSON object with this structure:
 {
   "title": "short plan title",
   "overview": "2-sentence overview of the plan strategy",
@@ -160,16 +155,15 @@ Return a JSON object with this exact structure:
   };
 
   const handleReset = () => {
-    setPhase("mode");
+    setPhase("subject-select");
     setPlan(null);
     setConfig(null);
-    setPlanMode(null);
     setSelectedSubject(null);
   };
 
   const handleBack = () => {
-    if (phase === "subject-select") setPhase("mode");
-    else if (phase === "setup") setPhase("mode");
+    if (phase === "mode-select") setPhase("subject-select");
+    else if (phase === "setup") setPhase("mode-select");
     else onBack();
   };
 
@@ -180,60 +174,19 @@ Return a JSON object with this exact structure:
           <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-xl">
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <h2 className="font-heading font-semibold text-foreground">Study Plan Generator</h2>
+          <h2 className="font-heading font-semibold text-foreground">
+            Study Plan Generator
+            {selectedSubject && phase !== "subject-select" && (
+              <span className="text-muted-foreground font-normal"> — {selectedSubject}</span>
+            )}
+          </h2>
         </div>
       </div>
 
       <div className="py-8">
         <AnimatePresence mode="wait">
-          {/* Mode selection */}
-          {phase === "mode" && (
-            <motion.div
-              key="mode"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="max-w-xl mx-auto px-4"
-            >
-              <div className="text-center mb-10">
-                <h2 className="font-heading text-2xl font-bold text-foreground mb-2">Choose Plan Type</h2>
-                <p className="text-muted-foreground text-sm">How would you like to create your study plan?</p>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button
-                  onClick={() => handleModeSelect("automatic")}
-                  className="group text-left bg-card border-2 border-border hover:border-primary rounded-2xl p-6 transition-all"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                    <Wand2 className="w-6 h-6 text-primary" />
-                  </div>
-                  <h3 className="font-heading font-bold text-foreground mb-1">Automatic</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Pick a subject and the AI instantly builds a full 14-day study plan for it.
-                  </p>
-                  <div className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary">
-                    Recommended ✨
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => handleModeSelect("manual")}
-                  className="group text-left bg-card border-2 border-border hover:border-primary rounded-2xl p-6 transition-all"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
-                    <PenLine className="w-6 h-6 text-accent" />
-                  </div>
-                  <h3 className="font-heading font-bold text-foreground mb-1">Manual</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Choose your own goal, duration, and daily study time to build a custom plan.
-                  </p>
-                </button>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Subject picker for automatic mode */}
+          {/* Step 1: Subject selection */}
           {phase === "subject-select" && (
             <motion.div
               key="subject-select"
@@ -243,10 +196,8 @@ Return a JSON object with this exact structure:
               className="max-w-xl mx-auto px-4"
             >
               <div className="text-center mb-8">
-                <h2 className="font-heading text-2xl font-bold text-foreground mb-2">Pick a Subject</h2>
-                <p className="text-muted-foreground text-sm">
-                  The AI will build a complete 14-day study plan for your chosen subject.
-                </p>
+                <h2 className="font-heading text-2xl font-bold text-foreground mb-2">Choose a Subject</h2>
+                <p className="text-muted-foreground text-sm">Pick the subject you want to create a study plan for.</p>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -266,10 +217,59 @@ Return a JSON object with this exact structure:
             </motion.div>
           )}
 
-          {/* Manual setup form */}
+          {/* Step 2: Automatic or Manual */}
+          {phase === "mode-select" && (
+            <motion.div
+              key="mode-select"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="max-w-xl mx-auto px-4"
+            >
+              <div className="text-center mb-10">
+                <h2 className="font-heading text-2xl font-bold text-foreground mb-2">
+                  How should we build your {selectedSubject} plan?
+                </h2>
+                <p className="text-muted-foreground text-sm">Choose how you'd like to set it up.</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button
+                  onClick={handleAutomatic}
+                  className="group text-left bg-card border-2 border-border hover:border-primary rounded-2xl p-6 transition-all"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                    <Wand2 className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="font-heading font-bold text-foreground mb-1">Automatic</h3>
+                  <p className="text-sm text-muted-foreground">
+                    The AI instantly builds a complete 14-day {selectedSubject} study plan for you.
+                  </p>
+                  <div className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary">
+                    Recommended ✨
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setPhase("setup")}
+                  className="group text-left bg-card border-2 border-border hover:border-primary rounded-2xl p-6 transition-all"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
+                    <PenLine className="w-6 h-6 text-accent" />
+                  </div>
+                  <h3 className="font-heading font-bold text-foreground mb-1">Manual</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Set your own goal, duration, and daily study time for a custom plan.
+                  </p>
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 3 (manual only): Setup form */}
           {phase === "setup" && (
             <motion.div key="setup" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <StudyPlanSetup onGenerate={handleManualGenerate} />
+              <StudyPlanSetup subject={selectedSubject} onGenerate={handleManualGenerate} />
             </motion.div>
           )}
 
@@ -284,9 +284,7 @@ Return a JSON object with this exact structure:
             >
               <Loader2 className="w-10 h-10 animate-spin text-primary" />
               <p className="font-heading font-semibold text-foreground">
-                {selectedSubject
-                  ? `Building your ${selectedSubject} study plan…`
-                  : "Building your study plan…"}
+                Building your {selectedSubject} study plan…
               </p>
               <p className="text-muted-foreground text-sm">This may take a few seconds</p>
             </motion.div>
@@ -298,6 +296,7 @@ Return a JSON object with this exact structure:
               <StudyPlanDisplay plan={plan} config={config} onReset={handleReset} />
             </motion.div>
           )}
+
         </AnimatePresence>
       </div>
     </div>
