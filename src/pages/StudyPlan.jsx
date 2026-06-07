@@ -6,85 +6,100 @@ import { Button } from "@/components/ui/button";
 import StudyPlanSetup from "@/components/studyplan/StudyPlanSetup";
 import StudyPlanDisplay from "@/components/studyplan/StudyPlanDisplay";
 
+const SUBJECTS = [
+  { value: "English", emoji: "📖" },
+  { value: "Math", emoji: "➗" },
+  { value: "Biology", emoji: "🧬" },
+  { value: "Chemistry", emoji: "⚗️" },
+  { value: "Physics", emoji: "⚡" },
+  { value: "History", emoji: "🏛️" },
+  { value: "Geography", emoji: "🌍" },
+  { value: "Computer Science", emoji: "💻" },
+  { value: "Islamic Studies", emoji: "☪️" },
+  { value: "Economics", emoji: "📊" },
+  { value: "Language Learning", emoji: "🗣️" },
+  { value: "Art", emoji: "🎨" },
+  { value: "Music", emoji: "🎵" },
+  { value: "Psychology", emoji: "🧠" },
+];
+
+const PLAN_JSON_SCHEMA = {
+  type: "object",
+  properties: {
+    title: { type: "string" },
+    overview: { type: "string" },
+    weeks: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          week: { type: "number" },
+          theme: { type: "string" },
+          days: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                day: { type: "number" },
+                label: { type: "string" },
+                focus: { type: "string" },
+                tasks: { type: "array", items: { type: "string" } },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
 export default function StudyPlan({ onBack }) {
-  const [phase, setPhase] = useState("mode"); // mode | setup | loading | plan
-  const [planMode, setPlanMode] = useState(null); // "manual" | "automatic"
+  const [phase, setPhase] = useState("mode"); // mode | subject-select | setup | loading | plan
+  const [planMode, setPlanMode] = useState(null); // "automatic" | "manual"
+  const [selectedSubject, setSelectedSubject] = useState(null);
   const [plan, setPlan] = useState(null);
   const [config, setConfig] = useState(null);
 
   const handleModeSelect = (m) => {
     setPlanMode(m);
-    setPhase(m === "manual" ? "setup" : "auto-loading");
-    if (m === "automatic") generateAutomatic();
+    if (m === "automatic") {
+      setPhase("subject-select");
+    } else {
+      setPhase("setup");
+    }
   };
 
-  const generateAutomatic = async () => {
+  const handleSubjectSelect = async (subject) => {
+    setSelectedSubject(subject);
     setPhase("loading");
 
-    // Fetch test scores to find weak areas
-    const scores = await base44.entities.TestScore.list("-created_date", 100);
-
-    let weakAreasPrompt = "";
-    if (scores.length === 0) {
-      weakAreasPrompt = "The student has no test history yet. Create a balanced beginner study plan covering foundational topics across all subjects.";
-    } else {
-      // Group by subject, calculate averages
-      const bySubject = scores.reduce((acc, s) => {
-        if (!acc[s.subject]) acc[s.subject] = { total: 0, count: 0 };
-        acc[s.subject].total += s.percentage;
-        acc[s.subject].count += 1;
-        return acc;
-      }, {});
-
-      const subjectSummaries = Object.entries(bySubject)
-        .map(([subject, { total, count }]) => ({
-          subject,
-          avg: Math.round(total / count),
-          tests: count,
-        }))
-        .sort((a, b) => a.avg - b.avg); // Weakest first
-
-      const weakSubjects = subjectSummaries.filter((s) => s.avg < 70);
-      const strongSubjects = subjectSummaries.filter((s) => s.avg >= 70);
-
-      weakAreasPrompt = `Based on the student's test history:
-
-WEAK AREAS (needs most focus):
-${weakSubjects.length > 0
-  ? weakSubjects.map((s) => `- ${s.subject}: ${s.avg}% average across ${s.tests} test(s)`).join("\n")
-  : "None identified yet."}
-
-STRONGER AREAS:
-${strongSubjects.length > 0
-  ? strongSubjects.map((s) => `- ${s.subject}: ${s.avg}% average`).join("\n")
-  : "None identified yet."}
-
-Focus the study plan heavily on the weak areas. Allocate more time to subjects with lower scores. For stronger subjects, only include brief review sessions.`;
-    }
-
-    const prompt = `You are an expert study planner. Create a smart, personalized study plan based on this student's performance data.
-
-${weakAreasPrompt}
+    const prompt = `You are an expert study planner. Create a comprehensive, automatic study plan for a student who wants to study ${subject}.
 
 Plan duration: 14 days
 Daily study time: 45 minutes
 
-Generate a practical, day-by-day study plan. Group days into weeks. For each day, provide 2-4 specific, actionable study tasks. Start with the weakest subjects and build up progressively.
+Build a structured day-by-day ${subject} study plan that:
+- Starts from foundational concepts and builds progressively
+- Covers the most important topics in ${subject}
+- Includes a variety of task types: reading, practice problems, review, etc.
+- Is realistic and motivating
 
-Return a JSON object with this exact structure:
+Group days into 2 weeks. For each day, provide 2-4 specific, actionable study tasks focused on ${subject}.
+
+Return a JSON object with this structure:
 {
-  "title": "short plan title",
-  "overview": "2-sentence overview explaining what this plan focuses on and why",
+  "title": "${subject} Study Plan",
+  "overview": "2-sentence overview of what this plan covers and the learning approach",
   "weeks": [
     {
       "week": 1,
-      "theme": "week theme/focus",
+      "theme": "week theme",
       "days": [
         {
           "day": 1,
           "label": "Day 1",
-          "focus": "main focus for this day",
-          "tasks": ["task 1", "task 2", "task 3"]
+          "focus": "main topic for this day",
+          "tasks": ["specific task 1", "specific task 2", "specific task 3"]
         }
       ]
     }
@@ -93,39 +108,11 @@ Return a JSON object with this exact structure:
 
     const result = await base44.integrations.Core.InvokeLLM({
       prompt,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          title: { type: "string" },
-          overview: { type: "string" },
-          weeks: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                week: { type: "number" },
-                theme: { type: "string" },
-                days: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      day: { type: "number" },
-                      label: { type: "string" },
-                      focus: { type: "string" },
-                      tasks: { type: "array", items: { type: "string" } },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+      response_json_schema: PLAN_JSON_SCHEMA,
     });
 
     setPlan(result);
-    setConfig({ mode: "automatic" });
+    setConfig({ mode: "automatic", subject });
     setPhase("plan");
   };
 
@@ -165,35 +152,7 @@ Return a JSON object with this exact structure:
 
     const result = await base44.integrations.Core.InvokeLLM({
       prompt,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          title: { type: "string" },
-          overview: { type: "string" },
-          weeks: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                week: { type: "number" },
-                theme: { type: "string" },
-                days: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      day: { type: "number" },
-                      label: { type: "string" },
-                      focus: { type: "string" },
-                      tasks: { type: "array", items: { type: "string" } },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+      response_json_schema: PLAN_JSON_SCHEMA,
     });
 
     setPlan(result);
@@ -205,18 +164,20 @@ Return a JSON object with this exact structure:
     setPlan(null);
     setConfig(null);
     setPlanMode(null);
+    setSelectedSubject(null);
+  };
+
+  const handleBack = () => {
+    if (phase === "subject-select") setPhase("mode");
+    else if (phase === "setup") setPhase("mode");
+    else onBack();
   };
 
   return (
     <div className="min-h-screen bg-background">
       <div className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={phase === "setup" ? () => setPhase("mode") : onBack}
-            className="rounded-xl"
-          >
+          <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-xl">
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <h2 className="font-heading font-semibold text-foreground">Study Plan Generator</h2>
@@ -225,6 +186,7 @@ Return a JSON object with this exact structure:
 
       <div className="py-8">
         <AnimatePresence mode="wait">
+          {/* Mode selection */}
           {phase === "mode" && (
             <motion.div
               key="mode"
@@ -235,13 +197,10 @@ Return a JSON object with this exact structure:
             >
               <div className="text-center mb-10">
                 <h2 className="font-heading text-2xl font-bold text-foreground mb-2">Choose Plan Type</h2>
-                <p className="text-muted-foreground text-sm">
-                  How would you like to create your study plan?
-                </p>
+                <p className="text-muted-foreground text-sm">How would you like to create your study plan?</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Automatic */}
                 <button
                   onClick={() => handleModeSelect("automatic")}
                   className="group text-left bg-card border-2 border-border hover:border-primary rounded-2xl p-6 transition-all"
@@ -251,14 +210,13 @@ Return a JSON object with this exact structure:
                   </div>
                   <h3 className="font-heading font-bold text-foreground mb-1">Automatic</h3>
                   <p className="text-sm text-muted-foreground">
-                    AI analyzes your test scores and weak areas to build a smart, personalized plan for you.
+                    Pick a subject and the AI instantly builds a full 14-day study plan for it.
                   </p>
                   <div className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary">
                     Recommended ✨
                   </div>
                 </button>
 
-                {/* Manual */}
                 <button
                   onClick={() => handleModeSelect("manual")}
                   className="group text-left bg-card border-2 border-border hover:border-primary rounded-2xl p-6 transition-all"
@@ -268,19 +226,54 @@ Return a JSON object with this exact structure:
                   </div>
                   <h3 className="font-heading font-bold text-foreground mb-1">Manual</h3>
                   <p className="text-sm text-muted-foreground">
-                    Choose your own subject, goal, duration, and daily study time to build a custom plan.
+                    Choose your own goal, duration, and daily study time to build a custom plan.
                   </p>
                 </button>
               </div>
             </motion.div>
           )}
 
+          {/* Subject picker for automatic mode */}
+          {phase === "subject-select" && (
+            <motion.div
+              key="subject-select"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="max-w-xl mx-auto px-4"
+            >
+              <div className="text-center mb-8">
+                <h2 className="font-heading text-2xl font-bold text-foreground mb-2">Pick a Subject</h2>
+                <p className="text-muted-foreground text-sm">
+                  The AI will build a complete 14-day study plan for your chosen subject.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {SUBJECTS.map((s) => (
+                  <button
+                    key={s.value}
+                    onClick={() => handleSubjectSelect(s.value)}
+                    className="flex flex-col items-center gap-2 bg-card border-2 border-border hover:border-primary rounded-2xl p-4 transition-all group"
+                  >
+                    <span className="text-3xl">{s.emoji}</span>
+                    <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors text-center leading-tight">
+                      {s.value}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Manual setup form */}
           {phase === "setup" && (
             <motion.div key="setup" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <StudyPlanSetup onGenerate={handleManualGenerate} />
             </motion.div>
           )}
 
+          {/* Loading */}
           {phase === "loading" && (
             <motion.div
               key="loading"
@@ -291,12 +284,15 @@ Return a JSON object with this exact structure:
             >
               <Loader2 className="w-10 h-10 animate-spin text-primary" />
               <p className="font-heading font-semibold text-foreground">
-                {planMode === "automatic" ? "Analyzing your scores and building your plan…" : "Building your study plan…"}
+                {selectedSubject
+                  ? `Building your ${selectedSubject} study plan…`
+                  : "Building your study plan…"}
               </p>
               <p className="text-muted-foreground text-sm">This may take a few seconds</p>
             </motion.div>
           )}
 
+          {/* Plan display */}
           {phase === "plan" && plan && (
             <motion.div key="plan" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <StudyPlanDisplay plan={plan} config={config} onReset={handleReset} />
