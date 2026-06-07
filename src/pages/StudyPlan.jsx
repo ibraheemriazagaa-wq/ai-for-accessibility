@@ -53,10 +53,10 @@ const PLAN_JSON_SCHEMA = {
   },
 };
 
-export default function StudyPlan({ onBack }) {
+export default function StudyPlan({ onBack, subject: initialSubject }) {
   // phases: subject-select | mode-select | setup | loading | plan
-  const [phase, setPhase] = useState("subject-select");
-  const [selectedSubject, setSelectedSubject] = useState(null);
+  const [phase, setPhase] = useState(initialSubject ? "mode-select" : "subject-select");
+  const [selectedSubject, setSelectedSubject] = useState(initialSubject || null);
   const [plan, setPlan] = useState(null);
   const [config, setConfig] = useState(null);
 
