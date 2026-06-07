@@ -204,6 +204,10 @@ Student's question: ${question}`;
                 <ClipboardList className="w-4 h-4" />
                 Generate a Test
               </Button>
+              <Button variant="outline" onClick={() => setMode("studyplan")} className="rounded-xl gap-2 text-sm">
+                <CalendarDays className="w-4 h-4" />
+                Study Plan
+              </Button>
               <Button variant="outline" onClick={() => setMode("dashboard")} className="rounded-xl gap-2 text-sm">
                 <BarChart2 className="w-4 h-4" />
                 My Progress
@@ -257,15 +261,7 @@ Student's question: ${question}`;
               lastResponse={messages.filter(m => m.role === "assistant").at(-1)?.content || ""}
             />
             <TTSButton language={language} />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setMode("studyplan")}
-              className="rounded-xl gap-1.5 text-xs font-semibold"
-            >
-              <CalendarDays className="w-3.5 h-3.5" />
-              Plan
-            </Button>
+
             {messages.length > 0 && (
               <Button variant="ghost" size="icon" onClick={handleClearChat} className="rounded-xl text-muted-foreground">
                 <Trash2 className="w-4 h-4" />
