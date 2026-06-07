@@ -136,6 +136,85 @@ Student's question: ${question}`;
     speak(response);
   };
 
+  // Study plan subject picker
+  if (mode === "studyplan-subject") {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-10">
+          <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => setMode("tutor")} className="rounded-xl">
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <h2 className="font-heading font-semibold text-foreground">Study Plan — Pick a Subject</h2>
+          </div>
+        </div>
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <p className="text-muted-foreground text-sm text-center mb-6">Which subject do you want a study plan for?</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {subjects.map((subject) => (
+              <SubjectCard
+                key={subject}
+                subject={subject}
+                isSelected={false}
+                onClick={() => {
+                  setStudyPlanSubject(subjectLabels[subject]);
+                  setMode("studyplan");
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Study plan mode
+  if (mode === "studyplan") {
+    return <StudyPlan subject={studyPlanSubject} onBack={() => setMode("studyplan-subject")} />;
+  }
+
+  // Test subject picker
+  if (mode === "test-subject") {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-10">
+          <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => setMode("tutor")} className="rounded-xl">
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <h2 className="font-heading font-semibold text-foreground">Generate a Test — Pick a Subject</h2>
+          </div>
+        </div>
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <p className="text-muted-foreground text-sm text-center mb-6">Which subject do you want to be tested on?</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {subjects.map((subject) => (
+              <SubjectCard
+                key={subject}
+                subject={subject}
+                isSelected={false}
+                onClick={() => {
+                  setTestSubject(subjectLabels[subject]);
+                  setMode("test");
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Test generator mode
+  if (mode === "test") {
+    return <TestGenerator initialSubject={testSubject} onBack={() => setMode("test-subject")} />;
+  }
+
+  // Dashboard mode
+  if (mode === "dashboard") {
+    return <Dashboard onBack={() => setMode("tutor")} />;
+  }
+
   // Subject selection view
   if (!selectedSubject) {
     return (
@@ -218,85 +297,6 @@ Student's question: ${question}`;
         </div>
       </div>
     );
-  }
-
-  // Study plan subject picker
-  if (mode === "studyplan-subject") {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-10">
-          <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => setMode("tutor")} className="rounded-xl">
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <h2 className="font-heading font-semibold text-foreground">Study Plan — Pick a Subject</h2>
-          </div>
-        </div>
-        <div className="max-w-2xl mx-auto px-4 py-8">
-          <p className="text-muted-foreground text-sm text-center mb-6">Which subject do you want a study plan for?</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {subjects.map((subject) => (
-              <SubjectCard
-                key={subject}
-                subject={subject}
-                isSelected={false}
-                onClick={() => {
-                  setStudyPlanSubject(subjectLabels[subject]);
-                  setMode("studyplan");
-                }}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Study plan mode
-  if (mode === "studyplan") {
-    return <StudyPlan subject={studyPlanSubject} onBack={() => setMode("studyplan-subject")} />;
-  }
-
-  // Test subject picker
-  if (mode === "test-subject") {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-10">
-          <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => setMode("tutor")} className="rounded-xl">
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <h2 className="font-heading font-semibold text-foreground">Generate a Test — Pick a Subject</h2>
-          </div>
-        </div>
-        <div className="max-w-2xl mx-auto px-4 py-8">
-          <p className="text-muted-foreground text-sm text-center mb-6">Which subject do you want to be tested on?</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {subjects.map((subject) => (
-              <SubjectCard
-                key={subject}
-                subject={subject}
-                isSelected={false}
-                onClick={() => {
-                  setTestSubject(subjectLabels[subject]);
-                  setMode("test");
-                }}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Test generator mode
-  if (mode === "test") {
-    return <TestGenerator initialSubject={testSubject} onBack={() => setMode("test-subject")} />;
-  }
-
-  // Dashboard mode
-  if (mode === "dashboard") {
-    return <Dashboard onBack={() => setMode("tutor")} />;
   }
 
   // Chat view
