@@ -1,17 +1,17 @@
 import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, Sparkles, ArrowLeft, Trash2, ClipboardList, CalendarDays, Volume2, VolumeX, BarChart2 } from "lucide-react";
+import { BookOpen, Sparkles, ArrowLeft, Trash2, ClipboardList, CalendarDays, BarChart2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SubjectCard from "@/components/tutor/SubjectCard";
 import LanguageSelector from "@/components/tutor/LanguageSelector";
 import ChatMessage from "@/components/tutor/ChatMessage";
 import ChatInput from "@/components/tutor/ChatInput";
 import TypingIndicator from "@/components/tutor/TypingIndicator";
-import QuizPage from "@/pages/QuizPage";
 import StudyPlan from "@/pages/StudyPlan";
 import TestGenerator from "@/pages/TestGenerator";
 import VoiceChat from "@/components/tutor/VoiceChat";
+import TTSButton from "@/components/tutor/TTSButton";
 import Dashboard from "@/pages/Dashboard";
 
 const subjects = [
@@ -42,15 +42,11 @@ export default function Home() {
   const [language, setLanguage] = useState("english");
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [mode, setMode] = useState("tutor"); // "tutor" | "quiz" | "studyplan" | "test"
-  const [ttsEnabled, setTtsEnabled] = useState(false);
+  const [mode, setMode] = useState("tutor"); // "tutor" | "studyplan" | "test" | "dashboard"
   const chatEndRef = useRef(null);
 
   const speak = (text) => {
-    if (!ttsEnabled) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    window.speechSynthesis.speak(utterance);
+    if (window.__ttsSpeak) window.__ttsSpeak(text);
   };
 
   useEffect(() => {
@@ -74,6 +70,12 @@ export default function Home() {
     setMessages([]);
   };
 
+  // Detect language from voice transcript and auto-switch
+  const handleVoiceSend = (question) => {
+    // Try to detect language via recognition lang hint — VoiceChat passes detected lang
+    handleSend(question);
+  };
+
   const handleSend = async (question) => {
     const userMessage = { role: "user", content: question };
     setMessages((prev) => [...prev, userMessage]);
@@ -82,6 +84,15 @@ export default function Home() {
     const detailRequest = /more detail|explain more|elaborate|in depth|deeper|expand|tell me more|explain further|can you explain|detailed|thoroughly|fully explain/i.test(question);
 
     const isLanguageLearning = selectedSubject === "language";
+
+    // Map subject to its related sibling subjects for boundary checking
+    const subjectBoundaryNote = `IMPORTANT — Subject Boundary Rule:
+You are ONLY allowed to answer questions that are clearly related to ${subjectLabels[selectedSubject]}.
+If the student asks something that belongs to a clearly different academic subject (e.g. they ask a Math question while you are the Biology tutor, or a History question while you are the Physics tutor), you must:
+1. Politely decline to answer that question.
+2. Explain in ONE sentence that this topic belongs to a different subject.
+3. Suggest they switch to the appropriate subject tutor (e.g. "I suggest heading to the Math tutor for this!").
+Do NOT answer off-topic subject questions, even partially.`;
 
     const prompt = isLanguageLearning
       ? `You are a friendly and engaging language tutor. Your job is to help students learn foreign languages — vocabulary, grammar, phrases, pronunciation tips, and more.
@@ -97,6 +108,8 @@ STRICT RULES:
 
 Student's question: ${question}`
       : `You are a friendly AI tutor for ${subjectLabels[selectedSubject]}.
+
+${subjectBoundaryNote}
 
 STRICT RULES:
 - Respond ENTIRELY in ${language} language.
@@ -202,17 +215,6 @@ Student's question: ${question}`;
     );
   }
 
-  // Quiz mode
-  if (selectedSubject && mode === "quiz") {
-    return (
-      <QuizPage
-        subject={selectedSubject}
-        language={language}
-        onBack={() => setMode("tutor")}
-      />
-    );
-  }
-
   // Study plan mode
   if (mode === "studyplan") {
     return <StudyPlan onBack={() => setMode("tutor")} />;
@@ -250,27 +252,11 @@ Student's question: ${question}`;
             <VoiceChat
               onSend={handleSend}
               isLoading={isLoading}
+              language={language}
+              onLanguageDetected={setLanguage}
               lastResponse={messages.filter(m => m.role === "assistant").at(-1)?.content || ""}
             />
-            <Button
-              variant={ttsEnabled ? "default" : "outline"}
-              size="sm"
-              onClick={() => { setTtsEnabled((v) => !v); window.speechSynthesis.cancel(); }}
-              className="rounded-xl gap-1.5 text-xs font-semibold"
-              title={ttsEnabled ? "Turn off text-to-speech" : "Turn on text-to-speech"}
-            >
-              {ttsEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-              TTS
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setMode("quiz")}
-              className="rounded-xl gap-1.5 text-xs font-semibold"
-            >
-              <ClipboardList className="w-3.5 h-3.5" />
-              Quiz
-            </Button>
+            <TTSButton language={language} />
             <Button
               variant="outline"
               size="sm"

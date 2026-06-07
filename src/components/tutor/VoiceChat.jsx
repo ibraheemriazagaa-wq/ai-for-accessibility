@@ -2,59 +2,63 @@ import { useState, useRef, useEffect } from "react";
 import { Mic, MicOff, Volume2, VolumeX, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
+import { LANGUAGE_LOCALES } from "@/components/tutor/TTSButton";
 
-const voices = [
-  { id: "male_1", label: "James", gender: "male", emoji: "👨" },
-  { id: "female_1", label: "Sophie", gender: "female", emoji: "👩" },
-  { id: "male_2", label: "Marcus", gender: "male", emoji: "🧔" },
-  { id: "female_2", label: "Aria", gender: "female", emoji: "👧" },
-  { id: "male_3", label: "Oliver", gender: "male", emoji: "👨‍🦳" },
-  { id: "female_3", label: "Luna", gender: "female", emoji: "👩‍🦰" },
-];
+// Map language value to BCP-47 recognition locale
+const RECOGNITION_LOCALES = {
+  ...LANGUAGE_LOCALES,
+  // A few extras that differ between recognition and TTS
+  chinese_simplified: "zh-CN",
+  chinese_traditional: "zh-TW",
+};
 
-export default function VoiceChat({ onSend, isLoading, lastResponse }) {
+// Map BCP-47 prefix back to app language value (for auto-detection)
+const LOCALE_TO_LANG = Object.entries(LANGUAGE_LOCALES).reduce((acc, [lang, locale]) => {
+  const prefix = locale.split("-")[0].toLowerCase();
+  if (!acc[prefix]) acc[prefix] = lang;
+  return acc;
+}, {});
+
+export default function VoiceChat({ onSend, isLoading, lastResponse, language, onLanguageDetected }) {
   const [open, setOpen] = useState(false);
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [speaking, setSpeaking] = useState(false);
-  const [selectedVoice, setSelectedVoice] = useState(voices[0]);
   const [availableSysVoices, setAvailableSysVoices] = useState([]);
   const recognitionRef = useRef(null);
   const synthRef = useRef(window.speechSynthesis);
 
+  const locale = RECOGNITION_LOCALES[language] || "en-US";
+
   useEffect(() => {
-    const loadVoices = () => {
-      setAvailableSysVoices(synthRef.current.getVoices());
-    };
+    const loadVoices = () => setAvailableSysVoices(synthRef.current.getVoices());
     loadVoices();
     synthRef.current.onvoiceschanged = loadVoices;
   }, []);
 
-  // Speak last response when it changes (if panel is open)
+  // Speak last response when it changes and panel is open
   useEffect(() => {
     if (open && lastResponse) speakText(lastResponse);
   }, [lastResponse, open]);
 
-  const getSysVoice = (voiceMeta) => {
-    const sysVoices = availableSysVoices;
-    if (voiceMeta.gender === "female") {
-      return sysVoices.find((v) => /female|woman|girl|f\b/i.test(v.name)) ||
-        sysVoices.find((v) => /zira|hazel|victoria|karen|samantha|moira|fiona|tessa|veena|susan|linda|alice|amelie|anna/i.test(v.name)) ||
-        sysVoices[0];
-    } else {
-      return sysVoices.find((v) => /male|man|boy|m\b/i.test(v.name)) ||
-        sysVoices.find((v) => /david|daniel|mark|alex|luca|jorge|thomas|lee|paul|james|oliver|fred/i.test(v.name)) ||
-        sysVoices[0];
-    }
+  const getVoiceForLocale = (loc) => {
+    const langPrefix = loc.split("-")[0].toLowerCase();
+    // First try exact locale match
+    let voice = availableSysVoices.find((v) => v.lang.toLowerCase() === loc.toLowerCase());
+    // Then try same language prefix
+    if (!voice) voice = availableSysVoices.find((v) => v.lang.toLowerCase().startsWith(langPrefix));
+    // Fallback to first available
+    if (!voice) voice = availableSysVoices[0];
+    return voice;
   };
 
   const speakText = (text) => {
     synthRef.current.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    const sysVoice = getSysVoice(selectedVoice);
-    if (sysVoice) utterance.voice = sysVoice;
+    utterance.lang = locale;
+    const voice = getVoiceForLocale(locale);
+    if (voice) utterance.voice = voice;
     utterance.rate = 0.95;
-    utterance.pitch = selectedVoice.gender === "female" ? 1.15 : 0.9;
     utterance.onstart = () => setSpeaking(true);
     utterance.onend = () => setSpeaking(false);
     synthRef.current.speak(utterance);
@@ -68,12 +72,13 @@ export default function VoiceChat({ onSend, isLoading, lastResponse }) {
   const startListening = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in your browser. Try Chrome.");
+      alert("Speech recognition is not supported in your browser. Please use Chrome.");
       return;
     }
     stopSpeaking();
     const recognition = new SpeechRecognition();
-    recognition.lang = "en-US";
+    // Use current language locale so the browser understands the spoken language
+    recognition.lang = locale;
     recognition.interimResults = true;
     recognition.continuous = false;
     recognitionRef.current = recognition;
@@ -82,9 +87,34 @@ export default function VoiceChat({ onSend, isLoading, lastResponse }) {
       const t = Array.from(e.results).map((r) => r[0].transcript).join("");
       setTranscript(t);
     };
+
+    recognition.onspeechend = () => {
+      recognition.stop();
+    };
+
     recognition.onend = () => {
       setListening(false);
     };
+
+    recognition.onerror = (e) => {
+      setListening(false);
+      if (e.error === "language-not-supported") {
+        // Fallback to English if chosen language not supported for recognition
+        const fallback = new SpeechRecognition();
+        fallback.lang = "en-US";
+        fallback.interimResults = true;
+        fallback.continuous = false;
+        fallback.onresult = (ev) => {
+          const t = Array.from(ev.results).map((r) => r[0].transcript).join("");
+          setTranscript(t);
+        };
+        fallback.onend = () => setListening(false);
+        fallback.start();
+        recognitionRef.current = fallback;
+        setListening(true);
+      }
+    };
+
     recognition.start();
     setListening(true);
     setTranscript("");
@@ -110,7 +140,6 @@ export default function VoiceChat({ onSend, isLoading, lastResponse }) {
 
   return (
     <>
-      {/* Voice button */}
       <Button
         variant="outline"
         size="sm"
@@ -122,7 +151,6 @@ export default function VoiceChat({ onSend, isLoading, lastResponse }) {
         Voice
       </Button>
 
-      {/* Panel */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -147,27 +175,12 @@ export default function VoiceChat({ onSend, isLoading, lastResponse }) {
               </button>
 
               <h3 className="font-heading font-bold text-lg text-foreground mb-1">Voice Chat</h3>
-              <p className="text-muted-foreground text-sm mb-5">Speak your question and hear the answer</p>
-
-              {/* Voice selector */}
-              <div className="mb-5">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Choose Voice</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {voices.map((v) => (
-                    <button
-                      key={v.id}
-                      onClick={() => setSelectedVoice(v)}
-                      className={`rounded-xl py-2 px-3 border-2 text-center transition-all text-sm
-                        ${selectedVoice.id === v.id
-                          ? "border-primary bg-primary/10 text-primary font-semibold"
-                          : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40"}`}
-                    >
-                      <div className="text-lg mb-0.5">{v.emoji}</div>
-                      <div className="text-xs font-medium">{v.label}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <p className="text-muted-foreground text-sm mb-1">
+                Speak your question and hear the answer
+              </p>
+              <p className="text-xs text-muted-foreground mb-5">
+                Recognition language: <span className="font-semibold text-foreground">{locale}</span>
+              </p>
 
               {/* Mic area */}
               <div className="flex flex-col items-center gap-4 py-4">
@@ -188,11 +201,7 @@ export default function VoiceChat({ onSend, isLoading, lastResponse }) {
                 </motion.button>
 
                 {listening && (
-                  <motion.div
-                    animate={{ scale: [1, 1.05, 1] }}
-                    transition={{ repeat: Infinity, duration: 1 }}
-                    className="flex gap-1"
-                  >
+                  <div className="flex gap-1">
                     {[0, 1, 2, 3, 4].map((i) => (
                       <motion.div
                         key={i}
@@ -201,11 +210,11 @@ export default function VoiceChat({ onSend, isLoading, lastResponse }) {
                         className="w-1.5 bg-primary rounded-full"
                       />
                     ))}
-                  </motion.div>
+                  </div>
                 )}
 
                 <p className="text-sm text-muted-foreground">
-                  {listening ? "Listening... tap to stop" : "Tap mic to speak"}
+                  {listening ? "Listening… tap to stop" : isLoading ? "Thinking…" : "Tap the mic to speak"}
                 </p>
               </div>
 
@@ -236,7 +245,7 @@ export default function VoiceChat({ onSend, isLoading, lastResponse }) {
                     disabled={isLoading}
                     className="flex-1 rounded-xl font-semibold"
                   >
-                    {isLoading ? "Thinking..." : "Send →"}
+                    {isLoading ? "Thinking…" : "Send →"}
                   </Button>
                 )}
               </div>
