@@ -23,17 +23,17 @@ const FORMATS = [
 ];
 const COUNTS = [5, 10, 15, 20, 25, 30];
 
-const emptySection = () => ({
+const emptySection = (subject = "Math") => ({
   id: Date.now() + Math.random(),
-  subject: "Math",
+  subject,
   topic: "",
   difficulty: "Medium",
   format: "multiple_choice",
   count: 10,
 });
 
-export default function TestGenerator({ onBack }) {
-  const [sections, setSections] = useState([emptySection()]);
+export default function TestGenerator({ onBack, initialSubject }) {
+  const [sections, setSections] = useState([emptySection(initialSubject || "Math")]);
   const [phase, setPhase] = useState("setup");
   const [testData, setTestData] = useState(null);
 
