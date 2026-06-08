@@ -14,48 +14,44 @@ import VoiceChat from "@/components/tutor/VoiceChat";
 import TTSButton from "@/components/tutor/TTSButton";
 import Dashboard from "@/pages/Dashboard";
 
-const isArabic = (lang) => lang === "arabic";
+// RTL languages
+const RTL_LANGUAGES = new Set([
+  "arabic", "arabic_egyptian", "arabic_levantine", "arabic_gulf", "arabic_maghrebi",
+  "arabic_iraqi", "arabic_sudanese", "arabic_yemeni", "arabic_libyan", "arabic_tunisian",
+  "arabic_algerian", "moroccan_arabic", "classical_arabic", "maltese_arabic",
+  "hebrew", "persian", "dari", "urdu", "sindhi", "pashto", "balochi",
+  "uyghur", "kurdish_sorani", "kashmiri", "dhivehi", "syriac", "aramaic",
+  "assyrian", "coptic", "berber_tamazight",
+]);
 
-const UI_TEXT = {
-  default: {
-    badge: "AI-Powered Learning",
-    title: "Your Personal",
-    titleHighlight: " AI Tutor",
-    subtitle: "Choose a subject and start learning with instant, simple explanations in your preferred language.",
-    generateTest: "Generate a Test",
-    studyPlan: "Study Plan",
-    myProgress: "My Progress",
-    readyToLearn: (subject) => `Ready to learn ${subject}!`,
-    chatSubtitle: "Ask any question and I'll explain it in simple words. No question is too basic!",
-    askAbout: (subject) => `Ask about ${subject}...`,
-    studyPlanTitle: "Study Plan — Pick a Subject",
-    studyPlanSubtitle: "Which subject do you want a study plan for?",
-    testTitle: "Generate a Test — Pick a Subject",
-    testSubtitle: "Which subject do you want to be tested on?",
-    progressTitle: "My Progress — Pick a Subject",
-    progressSubtitle: "Which subject do you want to see progress for?",
-    viewAll: "View All Subjects",
-  },
-  arabic: {
-    badge: "تعلم مدعوم بالذكاء الاصطناعي",
-    title: "معلمك الشخصي",
-    titleHighlight: " بالذكاء الاصطناعي",
-    subtitle: "اختر مادة وابدأ التعلم بشروحات فورية وبسيطة بلغتك المفضلة.",
-    generateTest: "إنشاء اختبار",
-    studyPlan: "خطة دراسية",
-    myProgress: "تقدمي",
-    readyToLearn: (subject) => `مستعد لتعلم ${subject}!`,
-    chatSubtitle: "اسأل أي سؤال وسأشرحه بكلمات بسيطة. لا يوجد سؤال بسيط جداً!",
-    askAbout: (subject) => `اسأل عن ${subject}...`,
-    studyPlanTitle: "خطة دراسية — اختر المادة",
-    studyPlanSubtitle: "أي مادة تريد خطة دراسية لها؟",
-    testTitle: "إنشاء اختبار — اختر المادة",
-    testSubtitle: "أي مادة تريد أن تُختبر فيها؟",
-    progressTitle: "تقدمي — اختر المادة",
-    progressSubtitle: "أي مادة تريد أن ترى تقدمك فيها؟",
-    viewAll: "عرض كل المواد",
-  },
+const isRTL = (lang) => RTL_LANGUAGES.has(lang);
+
+const DEFAULT_UI_TEXT = {
+  badge: "AI-Powered Learning",
+  title: "Your Personal",
+  titleHighlight: " AI Tutor",
+  subtitle: "Choose a subject and start learning with instant, simple explanations in your preferred language.",
+  generateTest: "Generate a Test",
+  studyPlan: "Study Plan",
+  myProgress: "My Progress",
+  readyToLearn: "Ready to learn {subject}!",
+  chatSubtitle: "Ask any question and I'll explain it in simple words. No question is too basic!",
+  askAbout: "Ask about {subject}...",
+  studyPlanTitle: "Study Plan — Pick a Subject",
+  studyPlanSubtitle: "Which subject do you want a study plan for?",
+  testTitle: "Generate a Test — Pick a Subject",
+  testSubtitle: "Which subject do you want to be tested on?",
+  progressTitle: "My Progress — Pick a Subject",
+  progressSubtitle: "Which subject do you want to see progress for?",
+  viewAll: "View All Subjects",
 };
+
+// Resolve template strings with subject substitution
+const resolveText = (texts) => ({
+  ...texts,
+  readyToLearn: (subject) => texts.readyToLearn.replace("{subject}", subject),
+  askAbout: (subject) => texts.askAbout.replace("{subject}", subject),
+});
 
 const subjects = [
   "english", "math", "biology", "chemistry", "physics",
@@ -85,11 +81,39 @@ export default function Home() {
   const [language, setLanguage] = useState("english");
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [mode, setMode] = useState("tutor"); // "tutor" | "studyplan-subject" | "studyplan" | "test-subject" | "test" | "dashboard"
+  const [mode, setMode] = useState("tutor");
   const [studyPlanSubject, setStudyPlanSubject] = useState(null);
   const [testSubject, setTestSubject] = useState(null);
   const [dashboardSubject, setDashboardSubject] = useState(null);
+  const [uiTexts, setUiTexts] = useState(DEFAULT_UI_TEXT);
+  const translationCache = useRef({ english: DEFAULT_UI_TEXT });
   const chatEndRef = useRef(null);
+
+  // Translate UI when language changes
+  useEffect(() => {
+    if (language === "english") {
+      setUiTexts(DEFAULT_UI_TEXT);
+      return;
+    }
+    if (translationCache.current[language]) {
+      setUiTexts(translationCache.current[language]);
+      return;
+    }
+    // Fetch translation
+    const keys = Object.entries(DEFAULT_UI_TEXT).map(([k, v]) => `"${k}": "${v}"`).join(",\n");
+    base44.integrations.Core.InvokeLLM({
+      prompt: `Translate the following UI strings into ${language} language. Keep {subject} placeholders exactly as-is. Return ONLY a valid JSON object with the same keys.\n\n{\n${keys}\n}`,
+      response_json_schema: {
+        type: "object",
+        properties: Object.fromEntries(Object.keys(DEFAULT_UI_TEXT).map(k => [k, { type: "string" }])),
+      },
+    }).then((result) => {
+      // Fill any missing keys with defaults
+      const merged = { ...DEFAULT_UI_TEXT, ...result };
+      translationCache.current[language] = merged;
+      setUiTexts(merged);
+    });
+  }, [language]);
 
   const speak = (text) => {
     if (window.__ttsSpeak) window.__ttsSpeak(text);
@@ -180,8 +204,8 @@ Student's question: ${question}`;
     speak(response);
   };
 
-  const t = isArabic(language) ? UI_TEXT.arabic : UI_TEXT.default;
-  const dir = isArabic(language) ? "rtl" : "ltr";
+  const t = resolveText(uiTexts);
+  const dir = isRTL(language) ? "rtl" : "ltr";
 
   // Study plan subject picker
   if (mode === "studyplan-subject") {
