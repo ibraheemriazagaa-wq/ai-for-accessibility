@@ -86,7 +86,9 @@ export default function Home() {
   const [testSubject, setTestSubject] = useState(null);
   const [dashboardSubject, setDashboardSubject] = useState(null);
   const [uiTexts, setUiTexts] = useState(DEFAULT_UI_TEXT);
+  const [translatedSuggestions, setTranslatedSuggestions] = useState(null);
   const translationCache = useRef({ english: DEFAULT_UI_TEXT });
+  const suggestionsCache = useRef({});
   const chatEndRef = useRef(null);
 
   // Translate UI when language changes — show instantly from cache or default, translate in background
@@ -115,6 +117,35 @@ export default function Home() {
     });
   }, [language]);
 
+  // Translate suggestions when language or subject changes
+  useEffect(() => {
+    if (!selectedSubject) return;
+    const englishSuggestions = getPromptSuggestions(selectedSubject);
+    if (language === "english") {
+      setTranslatedSuggestions(englishSuggestions);
+      return;
+    }
+    const cacheKey = `${language}:${selectedSubject}`;
+    if (suggestionsCache.current[cacheKey]) {
+      setTranslatedSuggestions(suggestionsCache.current[cacheKey]);
+      return;
+    }
+    // Show English immediately, translate in background
+    setTranslatedSuggestions(englishSuggestions);
+    base44.integrations.Core.InvokeLLM({
+      prompt: `Translate these question suggestions into ${language} language. Return ONLY a JSON object with key "suggestions" containing an array of translated strings, preserving the exact same meaning.\n\nSuggestions:\n${JSON.stringify(englishSuggestions)}`,
+      response_json_schema: {
+        type: "object",
+        properties: { suggestions: { type: "array", items: { type: "string" } } },
+      },
+    }).then((result) => {
+      if (result?.suggestions?.length) {
+        suggestionsCache.current[cacheKey] = result.suggestions;
+        setTranslatedSuggestions(result.suggestions);
+      }
+    });
+  }, [language, selectedSubject]);
+
   const speak = (text) => {
     if (window.__ttsSpeak) window.__ttsSpeak(text);
   };
@@ -126,6 +157,7 @@ export default function Home() {
   const handleSubjectSelect = (subject) => {
     setSelectedSubject(subject);
     setMessages([]);
+    setTranslatedSuggestions(null);
   };
 
   const handleBack = () => {
@@ -493,7 +525,7 @@ Student's question: ${question}`;
                 {t.chatSubtitle}
               </p>
               <div className="flex flex-wrap justify-center gap-2 mt-6">
-                {getPromptSuggestions(selectedSubject).map((suggestion, i) => (
+                {(translatedSuggestions || getPromptSuggestions(selectedSubject)).map((suggestion, i) => (
                   <button
                     key={i}
                     onClick={() => handleSend(suggestion)}

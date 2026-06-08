@@ -66,7 +66,46 @@ export default function TTSButton({ language }) {
     const voice = voices.find((v) => v.name === voiceName);
     if (!voice) return;
     synthRef.current.cancel();
-    const utterance = new SpeechSynthesisUtterance("Hello! This is how I sound.");
+    // Use a sample phrase in the voice's own language
+    const SAMPLE_PHRASES = {
+      "en": "Hello! This is how I sound.",
+      "ar": "مرحباً! هذا هو صوتي.",
+      "fr": "Bonjour! Voici ma voix.",
+      "es": "¡Hola! Así es como sueno.",
+      "de": "Hallo! So klingt meine Stimme.",
+      "it": "Ciao! Ecco come suono.",
+      "pt": "Olá! Assim é como eu soo.",
+      "ru": "Привет! Вот как я звучу.",
+      "zh": "你好！这是我的声音。",
+      "ja": "こんにちは！これが私の声です。",
+      "ko": "안녕하세요! 이것이 제 목소리입니다.",
+      "hi": "नमस्ते! यह मेरी आवाज़ है।",
+      "ur": "ہیلو! یہ میری آواز ہے۔",
+      "tr": "Merhaba! Böyle ses çıkarırım.",
+      "nl": "Hallo! Zo klink ik.",
+      "pl": "Cześć! Tak brzmię.",
+      "sv": "Hej! Så här låter jag.",
+      "da": "Hej! Sådan lyder jeg.",
+      "nb": "Hei! Slik lyder jeg.",
+      "fi": "Hei! Tältä kuulostan.",
+      "el": "Γεια σου! Έτσι ακούγομαι.",
+      "he": "שלום! כך אני נשמע.",
+      "fa": "سلام! این صدای من است.",
+      "id": "Halo! Begini suara saya.",
+      "ms": "Helo! Ini suara saya.",
+      "th": "สวัสดี! นี่คือเสียงของฉัน",
+      "vi": "Xin chào! Đây là giọng nói của tôi.",
+      "ro": "Bună! Acesta este sunetul meu.",
+      "uk": "Привіт! Так я звучу.",
+      "cs": "Ahoj! Takhle znám.",
+      "hu": "Helló! Így hangzom.",
+      "bn": "হ্যালো! এটি আমার কণ্ঠস্বর।",
+      "sw": "Habari! Hivi ndivyo ninavyosikika.",
+      "fil": "Kamusta! Ganito ang aking boses.",
+    };
+    const langPrefix = voice.lang.split("-")[0].toLowerCase();
+    const sampleText = SAMPLE_PHRASES[langPrefix] || "Hello! This is how I sound.";
+    const utterance = new SpeechSynthesisUtterance(sampleText);
     utterance.voice = voice;
     utterance.lang = voice.lang;
     utterance.rate = 0.95;
