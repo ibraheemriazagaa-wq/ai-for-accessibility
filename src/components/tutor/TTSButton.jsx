@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Volume2, VolumeX, X, ChevronDown, Play, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AnimatePresence, motion } from "framer-motion";
+import { base44 } from "@/api/base44Client";
 
 // Map language values to BCP-47 locale codes for speech synthesis
 const LANGUAGE_LOCALES = {
@@ -98,19 +99,39 @@ export default function TTSButton({ language }) {
 
   // Use a ref so Home always calls the freshest version with current locale/voices
   const speakRef = useRef(null);
-  speakRef.current = (text) => {
+  speakRef.current = async (text) => {
     if (!enabled) return;
     synthRef.current.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = locale;
-    // Use selected voice only if it matches the current language
-    const found = selectedVoice ? voices.find((v) => v.name === selectedVoice && v.lang.toLowerCase().startsWith(langPrefix)) : null;
-    if (found) {
-      utterance.voice = found;
-    } else if (langVoices.length > 0) {
-      utterance.voice = langVoices[0];
+
+    // If we have a matching browser voice, use it directly
+    const found = selectedVoice
+      ? voices.find((v) => v.name === selectedVoice && v.lang.toLowerCase().startsWith(langPrefix))
+      : null;
+    const voiceToUse = found || langVoices[0] || null;
+
+    if (voiceToUse) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = locale;
+      utterance.voice = voiceToUse;
+      synthRef.current.speak(utterance);
+    } else {
+      // No browser voice for this language — fall back to GenerateSpeech API
+      try {
+        const result = await base44.integrations.Core.GenerateSpeech({
+          text: text.slice(0, 500), // cap for cost
+          language_code: locale.split("-")[0],
+        });
+        if (result?.url) {
+          const audio = new Audio(result.url);
+          audio.play();
+        }
+      } catch {
+        // Silently fail — still set lang and let browser attempt it
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = locale;
+        synthRef.current.speak(utterance);
+      }
     }
-    synthRef.current.speak(utterance);
   };
 
   const toggle = () => {

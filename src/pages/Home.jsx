@@ -12,6 +12,7 @@ import StudyPlan from "@/pages/StudyPlan";
 import TestGenerator from "@/pages/TestGenerator";
 import VoiceChat from "@/components/tutor/VoiceChat";
 import TTSButton from "@/components/tutor/TTSButton";
+import StudyReminders from "@/components/tutor/StudyReminders";
 import Dashboard from "@/pages/Dashboard";
 
 // RTL languages
@@ -464,6 +465,7 @@ Student's question: ${question}`;
                 <BarChart2 className="w-4 h-4" />
                 {t.myProgress}
               </Button>
+              <StudyReminders subjects={subjects} subjectLabels={subjectLabels} />
             </div>
           </motion.div>
         </div>
@@ -496,6 +498,7 @@ Student's question: ${question}`;
               language={language}
             />
             <TTSButton language={language} />
+            <StudyReminders subjects={subjects} subjectLabels={subjectLabels} />
 
             {messages.length > 0 && (
               <Button variant="ghost" size="icon" onClick={handleClearChat} className="rounded-xl text-muted-foreground">
