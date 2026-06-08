@@ -462,8 +462,6 @@ Student's question: ${question}`;
               onSend={handleSend}
               isLoading={isLoading}
               language={language}
-              onLanguageDetected={setLanguage}
-              lastResponse={messages.filter(m => m.role === "assistant").at(-1)?.content || ""}
             />
             <TTSButton language={language} />
 

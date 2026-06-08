@@ -1,72 +1,26 @@
-import { useState, useRef, useEffect } from "react";
-import { Mic, MicOff, Volume2, VolumeX, X } from "lucide-react";
+import { useState, useRef } from "react";
+import { Mic, MicOff, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { LANGUAGE_LOCALES } from "@/components/tutor/TTSButton";
 
-// Map language value to BCP-47 recognition locale
 const RECOGNITION_LOCALES = {
   ...LANGUAGE_LOCALES,
-  // A few extras that differ between recognition and TTS
   chinese_simplified: "zh-CN",
   chinese_traditional: "zh-TW",
 };
 
-// Map BCP-47 prefix back to app language value (for auto-detection)
-const LOCALE_TO_LANG = Object.entries(LANGUAGE_LOCALES).reduce((acc, [lang, locale]) => {
-  const prefix = locale.split("-")[0].toLowerCase();
-  if (!acc[prefix]) acc[prefix] = lang;
-  return acc;
-}, {});
-
-export default function VoiceChat({ onSend, isLoading, lastResponse, language, onLanguageDetected }) {
+export default function VoiceChat({ onSend, isLoading, language }) {
   const [open, setOpen] = useState(false);
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
-  const [speaking, setSpeaking] = useState(false);
-  const [availableSysVoices, setAvailableSysVoices] = useState([]);
   const recognitionRef = useRef(null);
-  const synthRef = useRef(window.speechSynthesis);
 
   const locale = RECOGNITION_LOCALES[language] || "en-US";
 
-  useEffect(() => {
-    const loadVoices = () => setAvailableSysVoices(synthRef.current.getVoices());
-    loadVoices();
-    synthRef.current.onvoiceschanged = loadVoices;
-  }, []);
-
-  // Speak last response when it changes and panel is open
-  useEffect(() => {
-    if (open && lastResponse) speakText(lastResponse);
-  }, [lastResponse, open]);
-
-  const getVoiceForLocale = (loc) => {
-    const langPrefix = loc.split("-")[0].toLowerCase();
-    // First try exact locale match
-    let voice = availableSysVoices.find((v) => v.lang.toLowerCase() === loc.toLowerCase());
-    // Then try same language prefix
-    if (!voice) voice = availableSysVoices.find((v) => v.lang.toLowerCase().startsWith(langPrefix));
-    // Fallback to first available
-    if (!voice) voice = availableSysVoices[0];
-    return voice;
-  };
-
-  const speakText = (text) => {
-    synthRef.current.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = locale;
-    const voice = getVoiceForLocale(locale);
-    if (voice) utterance.voice = voice;
-    utterance.rate = 0.95;
-    utterance.onstart = () => setSpeaking(true);
-    utterance.onend = () => setSpeaking(false);
-    synthRef.current.speak(utterance);
-  };
-
-  const stopSpeaking = () => {
-    synthRef.current.cancel();
-    setSpeaking(false);
+  const stopListening = () => {
+    recognitionRef.current?.stop();
+    setListening(false);
   };
 
   const startListening = () => {
@@ -75,9 +29,11 @@ export default function VoiceChat({ onSend, isLoading, lastResponse, language, o
       alert("Speech recognition is not supported in your browser. Please use Chrome.");
       return;
     }
-    stopSpeaking();
+
+    // Stop any ongoing TTS so it doesn't interfere with the mic
+    window.speechSynthesis?.cancel();
+
     const recognition = new SpeechRecognition();
-    // Use current language locale so the browser understands the spoken language
     recognition.lang = locale;
     recognition.interimResults = true;
     recognition.continuous = false;
@@ -88,18 +44,14 @@ export default function VoiceChat({ onSend, isLoading, lastResponse, language, o
       setTranscript(t);
     };
 
-    recognition.onspeechend = () => {
-      recognition.stop();
-    };
+    recognition.onspeechend = () => recognition.stop();
 
-    recognition.onend = () => {
-      setListening(false);
-    };
+    recognition.onend = () => setListening(false);
 
     recognition.onerror = (e) => {
       setListening(false);
       if (e.error === "language-not-supported") {
-        // Fallback to English if chosen language not supported for recognition
+        // Fallback to English recognition
         const fallback = new SpeechRecognition();
         fallback.lang = "en-US";
         fallback.interimResults = true;
@@ -120,19 +72,14 @@ export default function VoiceChat({ onSend, isLoading, lastResponse, language, o
     setTranscript("");
   };
 
-  const stopListening = () => {
-    recognitionRef.current?.stop();
-    setListening(false);
-  };
-
   const handleSend = () => {
     if (!transcript.trim()) return;
     onSend(transcript.trim());
     setTranscript("");
+    setOpen(false);
   };
 
   const handleClose = () => {
-    stopSpeaking();
     stopListening();
     setOpen(false);
     setTranscript("");
@@ -176,7 +123,7 @@ export default function VoiceChat({ onSend, isLoading, lastResponse, language, o
 
               <h3 className="font-heading font-bold text-lg text-foreground mb-1">Voice Chat</h3>
               <p className="text-muted-foreground text-sm mb-1">
-                Speak your question and hear the answer
+                Tap the mic, speak your question, then send it
               </p>
               <p className="text-xs text-muted-foreground mb-5">
                 Recognition language: <span className="font-semibold text-foreground">{locale}</span>
@@ -225,30 +172,16 @@ export default function VoiceChat({ onSend, isLoading, lastResponse, language, o
                 </div>
               )}
 
-              {/* Actions */}
-              <div className="flex gap-3">
-                {speaking ? (
-                  <Button variant="outline" onClick={stopSpeaking} className="flex-1 rounded-xl gap-2">
-                    <VolumeX className="w-4 h-4" />
-                    Stop Speaking
-                  </Button>
-                ) : lastResponse ? (
-                  <Button variant="outline" onClick={() => speakText(lastResponse)} className="flex-1 rounded-xl gap-2">
-                    <Volume2 className="w-4 h-4" />
-                    Replay Answer
-                  </Button>
-                ) : null}
-
-                {transcript && (
-                  <Button
-                    onClick={handleSend}
-                    disabled={isLoading}
-                    className="flex-1 rounded-xl font-semibold"
-                  >
-                    {isLoading ? "Thinking…" : "Send →"}
-                  </Button>
-                )}
-              </div>
+              {/* Send button */}
+              {transcript && (
+                <Button
+                  onClick={handleSend}
+                  disabled={isLoading}
+                  className="w-full rounded-xl font-semibold"
+                >
+                  {isLoading ? "Thinking…" : "Send →"}
+                </Button>
+              )}
             </motion.div>
           </motion.div>
         )}

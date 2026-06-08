@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Volume2, VolumeX, X, ChevronDown } from "lucide-react";
+import { Volume2, VolumeX, X, ChevronDown, Play, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -22,6 +22,7 @@ export default function TTSButton({ language }) {
   const [open, setOpen] = useState(false);
   const [voices, setVoices] = useState([]);
   const [selectedVoice, setSelectedVoice] = useState(null);
+  const [previewingVoice, setPreviewingVoice] = useState(null);
   const synthRef = useRef(window.speechSynthesis);
   const panelRef = useRef(null);
 
@@ -55,6 +56,25 @@ export default function TTSButton({ language }) {
     v.lang.toLowerCase().startsWith(locale.split("-")[0].toLowerCase())
   );
   const fallbackVoices = langVoices.length > 0 ? langVoices : voices.slice(0, 10);
+
+  const previewVoice = (voiceName) => {
+    if (previewingVoice === voiceName) {
+      synthRef.current.cancel();
+      setPreviewingVoice(null);
+      return;
+    }
+    const voice = voices.find((v) => v.name === voiceName);
+    if (!voice) return;
+    synthRef.current.cancel();
+    const utterance = new SpeechSynthesisUtterance("Hello! This is how I sound.");
+    utterance.voice = voice;
+    utterance.lang = voice.lang;
+    utterance.rate = 0.95;
+    setPreviewingVoice(voiceName);
+    utterance.onend = () => setPreviewingVoice(null);
+    utterance.onerror = () => setPreviewingVoice(null);
+    synthRef.current.speak(utterance);
+  };
 
   const speak = (text) => {
     if (!enabled) return;
@@ -128,19 +148,35 @@ export default function TTSButton({ language }) {
               {fallbackVoices.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-4">No voices available for this language. Your browser may not support it.</p>
               ) : (
-                fallbackVoices.map((v) => (
-                  <button
-                    key={v.name}
-                    onClick={() => { setSelectedVoice(v.name); setOpen(false); }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs border transition-all
-                      ${selectedVoice === v.name || (!selectedVoice && v === fallbackVoices[0])
-                        ? "border-primary bg-primary/10 text-primary font-semibold"
-                        : "border-border text-muted-foreground hover:border-muted-foreground/40"}`}
-                  >
-                    <span className="font-medium">{v.name}</span>
-                    <span className="ml-2 opacity-60">{v.lang}</span>
-                  </button>
-                ))
+                fallbackVoices.map((v) => {
+                  const isSelected = selectedVoice === v.name || (!selectedVoice && v === fallbackVoices[0]);
+                  const isPreviewing = previewingVoice === v.name;
+                  return (
+                    <div
+                      key={v.name}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs border transition-all
+                        ${isSelected
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-muted-foreground hover:border-muted-foreground/40"}`}
+                    >
+                      <button
+                        className="flex-1 text-left"
+                        onClick={() => { setSelectedVoice(v.name); setOpen(false); synthRef.current.cancel(); setPreviewingVoice(null); }}
+                      >
+                        <span className="font-medium">{v.name}</span>
+                        <span className="ml-2 opacity-60">{v.lang}</span>
+                        {isSelected && <span className="ml-2 text-primary font-semibold">✓</span>}
+                      </button>
+                      <button
+                        onClick={() => previewVoice(v.name)}
+                        title="Preview this voice"
+                        className={`flex-shrink-0 p-1 rounded-lg transition-colors ${isPreviewing ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-primary"}`}
+                      >
+                        {isPreviewing ? <Square className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current" />}
+                      </button>
+                    </div>
+                  );
+                })
               )}
             </div>
           </motion.div>
