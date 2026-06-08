@@ -51,11 +51,11 @@ export default function TTSButton({ language }) {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Voices filtered for the current language locale
-  const langVoices = voices.filter((v) =>
-    v.lang.toLowerCase().startsWith(locale.split("-")[0].toLowerCase())
-  );
-  const fallbackVoices = langVoices.length > 0 ? langVoices : voices.slice(0, 10);
+  // Voices for the current language (matching ones first, then all others)
+  const langPrefix = locale.split("-")[0].toLowerCase();
+  const langVoices = voices.filter((v) => v.lang.toLowerCase().startsWith(langPrefix));
+  const otherVoices = voices.filter((v) => !v.lang.toLowerCase().startsWith(langPrefix));
+  const allVoices = [...langVoices, ...otherVoices];
 
   const previewVoice = (voiceName) => {
     if (previewingVoice === voiceName) {
@@ -85,8 +85,10 @@ export default function TTSButton({ language }) {
       const found = voices.find((v) => v.name === selectedVoice);
       if (found) utterance.voice = found;
     } else if (langVoices.length > 0) {
+      // Auto-pick best matching voice for the language
       utterance.voice = langVoices[0];
     }
+    // Always set lang so the browser uses the correct language even without an explicit voice
     synthRef.current.speak(utterance);
   };
 
@@ -107,7 +109,7 @@ export default function TTSButton({ language }) {
   });
 
   return (
-    <div className="relative" ref={panelRef}>
+    <div className="relative" dir="ltr" ref={panelRef}>
       <Button
         variant={enabled ? "default" : "outline"}
         size="sm"
@@ -142,41 +144,55 @@ export default function TTSButton({ language }) {
               </button>
             </div>
             <p className="text-xs text-muted-foreground mb-3">
-              Showing voices for <span className="font-semibold text-foreground">{locale}</span>
+              {langVoices.length > 0
+                ? <><span className="font-semibold text-foreground">{langVoices.length}</span> matching voices for <span className="font-semibold text-foreground">{locale}</span>, + all others below</>
+                : <>No native voices for <span className="font-semibold text-foreground">{locale}</span> — all voices shown, browser will use correct language</>
+              }
             </p>
-            <div className="max-h-52 overflow-y-auto space-y-1">
-              {fallbackVoices.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-4">No voices available for this language. Your browser may not support it.</p>
+            <div className="max-h-64 overflow-y-auto space-y-1">
+              {allVoices.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">No voices available. Your browser may not support speech synthesis.</p>
               ) : (
-                fallbackVoices.map((v) => {
-                  const isSelected = selectedVoice === v.name || (!selectedVoice && v === fallbackVoices[0]);
-                  const isPreviewing = previewingVoice === v.name;
-                  return (
-                    <div
-                      key={v.name}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs border transition-all
-                        ${isSelected
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border text-muted-foreground hover:border-muted-foreground/40"}`}
-                    >
-                      <button
-                        className="flex-1 text-left"
-                        onClick={() => { setSelectedVoice(v.name); setOpen(false); synthRef.current.cancel(); setPreviewingVoice(null); }}
-                      >
-                        <span className="font-medium">{v.name}</span>
-                        <span className="ml-2 opacity-60">{v.lang}</span>
-                        {isSelected && <span className="ml-2 text-primary font-semibold">✓</span>}
-                      </button>
-                      <button
-                        onClick={() => previewVoice(v.name)}
-                        title="Preview this voice"
-                        className={`flex-shrink-0 p-1 rounded-lg transition-colors ${isPreviewing ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-primary"}`}
-                      >
-                        {isPreviewing ? <Square className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current" />}
-                      </button>
-                    </div>
-                  );
-                })
+                <>
+                  {langVoices.length > 0 && otherVoices.length > 0 && (
+                    <p className="text-xs font-semibold text-primary px-1 pt-1 pb-0.5">Matching voices</p>
+                  )}
+                  {allVoices.map((v, idx) => {
+                    const isFirst = idx === 0;
+                    const isSectionBreak = langVoices.length > 0 && idx === langVoices.length;
+                    const isSelected = selectedVoice === v.name || (!selectedVoice && isFirst);
+                    const isPreviewing = previewingVoice === v.name;
+                    return (
+                      <div key={v.name}>
+                        {isSectionBreak && (
+                          <p className="text-xs font-semibold text-muted-foreground px-1 pt-2 pb-0.5">Other voices</p>
+                        )}
+                        <div
+                          className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs border transition-all
+                            ${isSelected
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border text-muted-foreground hover:border-muted-foreground/40"}`}
+                        >
+                          <button
+                            className="flex-1 text-left"
+                            onClick={() => { setSelectedVoice(v.name); setOpen(false); synthRef.current.cancel(); setPreviewingVoice(null); }}
+                          >
+                            <span className="font-medium">{v.name}</span>
+                            <span className="ml-2 opacity-60">{v.lang}</span>
+                            {isSelected && <span className="ml-2 text-primary font-semibold">✓</span>}
+                          </button>
+                          <button
+                            onClick={() => previewVoice(v.name)}
+                            title="Preview this voice"
+                            className={`flex-shrink-0 p-1 rounded-lg transition-colors ${isPreviewing ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-primary"}`}
+                          >
+                            {isPreviewing ? <Square className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current" />}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
               )}
             </div>
           </motion.div>

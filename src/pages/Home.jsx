@@ -89,7 +89,7 @@ export default function Home() {
   const translationCache = useRef({ english: DEFAULT_UI_TEXT });
   const chatEndRef = useRef(null);
 
-  // Translate UI when language changes
+  // Translate UI when language changes — show instantly from cache or default, translate in background
   useEffect(() => {
     if (language === "english") {
       setUiTexts(DEFAULT_UI_TEXT);
@@ -99,7 +99,8 @@ export default function Home() {
       setUiTexts(translationCache.current[language]);
       return;
     }
-    // Fetch translation
+    // Show default UI immediately, then update when translation arrives
+    setUiTexts(DEFAULT_UI_TEXT);
     const keys = Object.entries(DEFAULT_UI_TEXT).map(([k, v]) => `"${k}": "${v}"`).join(",\n");
     base44.integrations.Core.InvokeLLM({
       prompt: `Translate the following UI strings into ${language} language. Keep {subject} placeholders exactly as-is. Return ONLY a valid JSON object with the same keys.\n\n{\n${keys}\n}`,
@@ -108,7 +109,6 @@ export default function Home() {
         properties: Object.fromEntries(Object.keys(DEFAULT_UI_TEXT).map(k => [k, { type: "string" }])),
       },
     }).then((result) => {
-      // Fill any missing keys with defaults
       const merged = { ...DEFAULT_UI_TEXT, ...result };
       translationCache.current[language] = merged;
       setUiTexts(merged);
@@ -456,7 +456,7 @@ Student's question: ${question}`;
               </h2>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" dir="ltr">
             <LanguageSelector value={language} onChange={setLanguage} />
             <VoiceChat
               onSend={handleSend}
