@@ -14,6 +14,49 @@ import VoiceChat from "@/components/tutor/VoiceChat";
 import TTSButton from "@/components/tutor/TTSButton";
 import Dashboard from "@/pages/Dashboard";
 
+const isArabic = (lang) => lang === "arabic";
+
+const UI_TEXT = {
+  default: {
+    badge: "AI-Powered Learning",
+    title: "Your Personal",
+    titleHighlight: " AI Tutor",
+    subtitle: "Choose a subject and start learning with instant, simple explanations in your preferred language.",
+    generateTest: "Generate a Test",
+    studyPlan: "Study Plan",
+    myProgress: "My Progress",
+    readyToLearn: (subject) => `Ready to learn ${subject}!`,
+    chatSubtitle: "Ask any question and I'll explain it in simple words. No question is too basic!",
+    askAbout: (subject) => `Ask about ${subject}...`,
+    studyPlanTitle: "Study Plan — Pick a Subject",
+    studyPlanSubtitle: "Which subject do you want a study plan for?",
+    testTitle: "Generate a Test — Pick a Subject",
+    testSubtitle: "Which subject do you want to be tested on?",
+    progressTitle: "My Progress — Pick a Subject",
+    progressSubtitle: "Which subject do you want to see progress for?",
+    viewAll: "View All Subjects",
+  },
+  arabic: {
+    badge: "تعلم مدعوم بالذكاء الاصطناعي",
+    title: "معلمك الشخصي",
+    titleHighlight: " بالذكاء الاصطناعي",
+    subtitle: "اختر مادة وابدأ التعلم بشروحات فورية وبسيطة بلغتك المفضلة.",
+    generateTest: "إنشاء اختبار",
+    studyPlan: "خطة دراسية",
+    myProgress: "تقدمي",
+    readyToLearn: (subject) => `مستعد لتعلم ${subject}!`,
+    chatSubtitle: "اسأل أي سؤال وسأشرحه بكلمات بسيطة. لا يوجد سؤال بسيط جداً!",
+    askAbout: (subject) => `اسأل عن ${subject}...`,
+    studyPlanTitle: "خطة دراسية — اختر المادة",
+    studyPlanSubtitle: "أي مادة تريد خطة دراسية لها؟",
+    testTitle: "إنشاء اختبار — اختر المادة",
+    testSubtitle: "أي مادة تريد أن تُختبر فيها؟",
+    progressTitle: "تقدمي — اختر المادة",
+    progressSubtitle: "أي مادة تريد أن ترى تقدمك فيها؟",
+    viewAll: "عرض كل المواد",
+  },
+};
+
 const subjects = [
   "english", "math", "biology", "chemistry", "physics",
   "history", "geography", "computer_science", "islamic", "economics",
@@ -137,20 +180,23 @@ Student's question: ${question}`;
     speak(response);
   };
 
+  const t = isArabic(language) ? UI_TEXT.arabic : UI_TEXT.default;
+  const dir = isArabic(language) ? "rtl" : "ltr";
+
   // Study plan subject picker
   if (mode === "studyplan-subject") {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background" dir={dir}>
         <div className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-10">
           <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => setMode("tutor")} className="rounded-xl">
               <ArrowLeft className="w-4 h-4" />
             </Button>
-            <h2 className="font-heading font-semibold text-foreground">Study Plan — Pick a Subject</h2>
+            <h2 className="font-heading font-semibold text-foreground">{t.studyPlanTitle}</h2>
           </div>
         </div>
         <div className="max-w-2xl mx-auto px-4 py-8">
-          <p className="text-muted-foreground text-sm text-center mb-6">Which subject do you want a study plan for?</p>
+          <p className="text-muted-foreground text-sm text-center mb-6">{t.studyPlanSubtitle}</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {subjects.map((subject) => (
               <SubjectCard
@@ -177,17 +223,17 @@ Student's question: ${question}`;
   // Test subject picker
   if (mode === "test-subject") {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background" dir={dir}>
         <div className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-10">
           <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => setMode("tutor")} className="rounded-xl">
               <ArrowLeft className="w-4 h-4" />
             </Button>
-            <h2 className="font-heading font-semibold text-foreground">Generate a Test — Pick a Subject</h2>
+            <h2 className="font-heading font-semibold text-foreground">{t.testTitle}</h2>
           </div>
         </div>
         <div className="max-w-2xl mx-auto px-4 py-8">
-          <p className="text-muted-foreground text-sm text-center mb-6">Which subject do you want to be tested on?</p>
+          <p className="text-muted-foreground text-sm text-center mb-6">{t.testSubtitle}</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {subjects.map((subject) => (
               <SubjectCard
@@ -214,17 +260,17 @@ Student's question: ${question}`;
   // Dashboard subject picker
   if (mode === "dashboard-subject") {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background" dir={dir}>
         <div className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-10">
           <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => setMode("tutor")} className="rounded-xl">
               <ArrowLeft className="w-4 h-4" />
             </Button>
-            <h2 className="font-heading font-semibold text-foreground">My Progress — Pick a Subject</h2>
+            <h2 className="font-heading font-semibold text-foreground">{t.progressTitle}</h2>
           </div>
         </div>
         <div className="max-w-2xl mx-auto px-4 py-8">
-          <p className="text-muted-foreground text-sm text-center mb-6">Which subject do you want to see progress for?</p>
+          <p className="text-muted-foreground text-sm text-center mb-6">{t.progressSubtitle}</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
             {subjects.map((subject) => (
               <SubjectCard
@@ -242,7 +288,7 @@ Student's question: ${question}`;
             onClick={() => { setDashboardSubject(null); setMode("dashboard"); }}
             className="w-full py-3 rounded-2xl border-2 border-dashed border-border text-muted-foreground text-sm font-medium hover:border-primary hover:text-primary transition-all"
           >
-            View All Subjects
+            {t.viewAll}
           </button>
         </div>
       </div>
@@ -258,7 +304,7 @@ Student's question: ${question}`;
 
   if (!selectedSubject) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background" dir={dir}>
         <div className="max-w-4xl mx-auto px-4 py-8 md:py-16">
           {/* Header */}
           <motion.div
@@ -268,14 +314,14 @@ Student's question: ${question}`;
           >
             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary rounded-full px-4 py-1.5 text-sm font-medium mb-6">
               <Sparkles className="w-4 h-4" />
-              AI-Powered Learning
+              {t.badge}
             </div>
             <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-4 tracking-tight">
-              Your Personal
-              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"> AI Tutor</span>
+              {t.title}
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">{t.titleHighlight}</span>
             </h1>
             <p className="text-muted-foreground text-lg max-w-md mx-auto">
-              Choose a subject and start learning with instant, simple explanations in your preferred language.
+              {t.subtitle}
             </p>
           </motion.div>
 
@@ -312,7 +358,7 @@ Student's question: ${question}`;
             ))}
           </motion.div>
 
-          {/* Study Plan CTA */}
+          {/* Bottom CTAs */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -322,15 +368,15 @@ Student's question: ${question}`;
             <div className="flex flex-wrap justify-center gap-3">
               <Button variant="outline" onClick={() => setMode("test-subject")} className="rounded-xl gap-2 text-sm">
                 <ClipboardList className="w-4 h-4" />
-                Generate a Test
+                {t.generateTest}
               </Button>
               <Button variant="outline" onClick={() => setMode("studyplan-subject")} className="rounded-xl gap-2 text-sm">
                 <CalendarDays className="w-4 h-4" />
-                Study Plan
+                {t.studyPlan}
               </Button>
               <Button variant="outline" onClick={() => setMode("dashboard-subject")} className="rounded-xl gap-2 text-sm">
                 <BarChart2 className="w-4 h-4" />
-                My Progress
+                {t.myProgress}
               </Button>
             </div>
           </motion.div>
@@ -341,7 +387,7 @@ Student's question: ${question}`;
 
   // Chat view
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-background" dir={dir}>
       {/* Top bar */}
       <div className="flex-shrink-0 border-b border-border bg-card/80 backdrop-blur-md">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -389,10 +435,10 @@ Student's question: ${question}`;
                 <Sparkles className="w-7 h-7 text-primary" />
               </div>
               <h3 className="font-heading text-xl font-semibold text-foreground mb-2">
-                Ready to learn {subjectLabels[selectedSubject]}!
+                {t.readyToLearn(subjectLabels[selectedSubject])}
               </h3>
               <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-                Ask any question and I'll explain it in simple words. No question is too basic!
+                {t.chatSubtitle}
               </p>
               <div className="flex flex-wrap justify-center gap-2 mt-6">
                 {getPromptSuggestions(selectedSubject).map((suggestion, i) => (
@@ -425,7 +471,7 @@ Student's question: ${question}`;
           <ChatInput
             onSend={handleSend}
             isLoading={isLoading}
-            placeholder={`Ask about ${subjectLabels[selectedSubject]}...`}
+            placeholder={t.askAbout(subjectLabels[selectedSubject])}
           />
         </div>
       </div>
