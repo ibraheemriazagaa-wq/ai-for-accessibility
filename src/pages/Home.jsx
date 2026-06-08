@@ -151,6 +151,36 @@ export default function Home() {
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
+    // Detect video request
+    const videoRequest = /show.*video|video.*about|watch.*video|video.*explain|can.*see.*video|make.*video|create.*video|generate.*video/i.test(question);
+
+    if (videoRequest) {
+      // Ask LLM for a vivid visual description
+      const imagePrompt = await base44.integrations.Core.InvokeLLM({
+        prompt: `The student is studying ${subjectLabels[selectedSubject]} and asked: "${question}".
+Write a detailed visual description for an educational diagram or illustration about this topic, suitable for a student.
+Focus on what should be visually shown. Be specific and descriptive.
+Return ONLY the description, nothing else.`
+      });
+
+      const [textRes, imageRes] = await Promise.all([
+        base44.integrations.Core.InvokeLLM({
+          prompt: `You are a tutor for ${subjectLabels[selectedSubject]}. The student asked: "${question}".
+Respond in ${language} language. Give a brief 2-3 sentence explanation to accompany a visual diagram of this topic. Keep it simple and encouraging.`
+        }),
+        base44.integrations.Core.GenerateImage({ prompt: imagePrompt + ", educational diagram, clear labels, clean illustration, bright colors" })
+      ]);
+
+      setMessages((prev) => [...prev, {
+        role: "assistant",
+        content: textRes,
+        imageUrl: imageRes.url,
+      }]);
+      setIsLoading(false);
+      speak(textRes);
+      return;
+    }
+
     const detailRequest = /more detail|explain more|elaborate|in depth|deeper|expand|tell me more|explain further|can you explain|detailed|thoroughly|fully explain/i.test(question);
 
     const isLanguageLearning = selectedSubject === "language";

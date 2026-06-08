@@ -31,18 +31,27 @@ export default function ChatMessage({ message }) {
         {isUser ? (
           <p className="text-sm leading-relaxed">{message.content}</p>
         ) : (
-          <ReactMarkdown
-            className="text-sm prose prose-sm prose-slate dark:prose-invert max-w-none
-              [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
-              prose-p:my-1.5 prose-p:leading-relaxed
-              prose-ul:my-1.5 prose-ol:my-1.5
-              prose-li:my-0.5
-              prose-headings:font-heading prose-headings:font-semibold
-              prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs
-              prose-pre:bg-muted prose-pre:rounded-xl"
-          >
-            {message.content}
-          </ReactMarkdown>
+          <>
+            <ReactMarkdown
+              className="text-sm prose prose-sm prose-slate dark:prose-invert max-w-none
+                [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
+                prose-p:my-1.5 prose-p:leading-relaxed
+                prose-ul:my-1.5 prose-ol:my-1.5
+                prose-li:my-0.5
+                prose-headings:font-heading prose-headings:font-semibold
+                prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs
+                prose-pre:bg-muted prose-pre:rounded-xl"
+            >
+              {message.content}
+            </ReactMarkdown>
+            {message.imageUrl && (
+              <img
+                src={message.imageUrl}
+                alt="Educational visual"
+                className="mt-3 rounded-xl w-full max-w-sm border border-border"
+              />
+            )}
+          </>
         )}
       </div>
     </motion.div>
