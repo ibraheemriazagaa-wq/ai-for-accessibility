@@ -51,11 +51,30 @@ export default function TTSButton({ language }) {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Voices for the current language (matching ones first, then all others)
+  // Only show voices matching the selected language
   const langPrefix = locale.split("-")[0].toLowerCase();
   const langVoices = voices.filter((v) => v.lang.toLowerCase().startsWith(langPrefix));
-  const otherVoices = voices.filter((v) => !v.lang.toLowerCase().startsWith(langPrefix));
-  const allVoices = [...langVoices, ...otherVoices];
+
+  const SAMPLE_PHRASES = {
+    "en": "Hello! This is how I sound.", "ar": "مرحباً! هذا هو صوتي.",
+    "fr": "Bonjour! Voici ma voix.", "es": "¡Hola! Así es como sueno.",
+    "de": "Hallo! So klingt meine Stimme.", "it": "Ciao! Ecco come suono.",
+    "pt": "Olá! Assim é como eu soo.", "ru": "Привет! Вот как я звучу.",
+    "zh": "你好！这是我的声音。", "ja": "こんにちは！これが私の声です。",
+    "ko": "안녕하세요! 이것이 제 목소리입니다.", "hi": "नमस्ते! यह मेरी आवाज़ है।",
+    "ur": "ہیلو! یہ میری آواز ہے۔", "tr": "Merhaba! Böyle ses çıkarırım.",
+    "nl": "Hallo! Zo klink ik.", "pl": "Cześć! Tak brzmię.",
+    "sv": "Hej! Så här låter jag.", "da": "Hej! Sådan lyder jeg.",
+    "nb": "Hei! Slik lyder jeg.", "fi": "Hei! Tältä kuulostan.",
+    "el": "Γεια σου! Έτσι ακούγομαι.", "he": "שלום! כך אני נשמע.",
+    "fa": "سلام! این صدای من است.", "id": "Halo! Begini suara saya.",
+    "ms": "Helo! Ini suara saya.", "th": "สวัสดี! นี่คือเสียงของฉัน",
+    "vi": "Xin chào! Đây là giọng nói của tôi.", "ro": "Bună! Acesta este sunetul meu.",
+    "uk": "Привіт! Так я звучу.", "cs": "Ahoj! Takhle znám.",
+    "hu": "Helló! Így hangzom.", "bn": "হ্যালো! এটি আমার কণ্ঠস্বর।",
+    "sw": "Habari! Hivi ndivyo ninavyosikika.", "fil": "Kamusta! Ganito ang aking boses.",
+  };
+  const samplePhrase = SAMPLE_PHRASES[langPrefix] || SAMPLE_PHRASES["en"];
 
   const previewVoice = (voiceName) => {
     if (previewingVoice === voiceName) {
@@ -66,48 +85,10 @@ export default function TTSButton({ language }) {
     const voice = voices.find((v) => v.name === voiceName);
     if (!voice) return;
     synthRef.current.cancel();
-    // Use a sample phrase in the voice's own language
-    const SAMPLE_PHRASES = {
-      "en": "Hello! This is how I sound.",
-      "ar": "مرحباً! هذا هو صوتي.",
-      "fr": "Bonjour! Voici ma voix.",
-      "es": "¡Hola! Así es como sueno.",
-      "de": "Hallo! So klingt meine Stimme.",
-      "it": "Ciao! Ecco come suono.",
-      "pt": "Olá! Assim é como eu soo.",
-      "ru": "Привет! Вот как я звучу.",
-      "zh": "你好！这是我的声音。",
-      "ja": "こんにちは！これが私の声です。",
-      "ko": "안녕하세요! 이것이 제 목소리입니다.",
-      "hi": "नमस्ते! यह मेरी आवाज़ है।",
-      "ur": "ہیلو! یہ میری آواز ہے۔",
-      "tr": "Merhaba! Böyle ses çıkarırım.",
-      "nl": "Hallo! Zo klink ik.",
-      "pl": "Cześć! Tak brzmię.",
-      "sv": "Hej! Så här låter jag.",
-      "da": "Hej! Sådan lyder jeg.",
-      "nb": "Hei! Slik lyder jeg.",
-      "fi": "Hei! Tältä kuulostan.",
-      "el": "Γεια σου! Έτσι ακούγομαι.",
-      "he": "שלום! כך אני נשמע.",
-      "fa": "سلام! این صدای من است.",
-      "id": "Halo! Begini suara saya.",
-      "ms": "Helo! Ini suara saya.",
-      "th": "สวัสดี! นี่คือเสียงของฉัน",
-      "vi": "Xin chào! Đây là giọng nói của tôi.",
-      "ro": "Bună! Acesta este sunetul meu.",
-      "uk": "Привіт! Так я звучу.",
-      "cs": "Ahoj! Takhle znám.",
-      "hu": "Helló! Így hangzom.",
-      "bn": "হ্যালো! এটি আমার কণ্ঠস্বর।",
-      "sw": "Habari! Hivi ndivyo ninavyosikika.",
-      "fil": "Kamusta! Ganito ang aking boses.",
-    };
-    const langPrefix = voice.lang.split("-")[0].toLowerCase();
-    const sampleText = SAMPLE_PHRASES[langPrefix] || "Hello! This is how I sound.";
-    const utterance = new SpeechSynthesisUtterance(sampleText);
+    // Always preview in the currently selected language
+    const utterance = new SpeechSynthesisUtterance(samplePhrase);
     utterance.voice = voice;
-    utterance.lang = voice.lang;
+    utterance.lang = locale;
     utterance.rate = 0.95;
     setPreviewingVoice(voiceName);
     utterance.onend = () => setPreviewingVoice(null);
@@ -121,16 +102,11 @@ export default function TTSButton({ language }) {
     if (!enabled) return;
     synthRef.current.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    // Always set the correct locale for the chosen language
     utterance.lang = locale;
-    if (selectedVoice) {
-      const found = voices.find((v) => v.name === selectedVoice);
-      // Only use the selected voice if it matches the current language; otherwise auto-pick
-      if (found && found.lang.toLowerCase().startsWith(langPrefix)) {
-        utterance.voice = found;
-      } else if (langVoices.length > 0) {
-        utterance.voice = langVoices[0];
-      }
+    // Use selected voice only if it matches the current language
+    const found = selectedVoice ? voices.find((v) => v.name === selectedVoice && v.lang.toLowerCase().startsWith(langPrefix)) : null;
+    if (found) {
+      utterance.voice = found;
     } else if (langVoices.length > 0) {
       utterance.voice = langVoices[0];
     }
@@ -190,54 +166,45 @@ export default function TTSButton({ language }) {
             </div>
             <p className="text-xs text-muted-foreground mb-3">
               {langVoices.length > 0
-                ? <><span className="font-semibold text-foreground">{langVoices.length}</span> matching voices for <span className="font-semibold text-foreground">{locale}</span>, + all others below</>
-                : <>No native voices for <span className="font-semibold text-foreground">{locale}</span> — all voices shown, browser will use correct language</>
+                ? <><span className="font-semibold text-foreground">{langVoices.length}</span> {language} voices available</>
+                : <>No native voices for this language — the browser will still read in {language}</>
               }
             </p>
             <div className="max-h-64 overflow-y-auto space-y-1">
-              {allVoices.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-4">No voices available. Your browser may not support speech synthesis.</p>
+              {langVoices.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">
+                  Your browser has no installed voices for this language. TTS will still speak in {language} using the browser default.
+                </p>
               ) : (
-                <>
-                  {langVoices.length > 0 && otherVoices.length > 0 && (
-                    <p className="text-xs font-semibold text-primary px-1 pt-1 pb-0.5">Matching voices</p>
-                  )}
-                  {allVoices.map((v, idx) => {
-                    const isFirst = idx === 0;
-                    const isSectionBreak = langVoices.length > 0 && idx === langVoices.length;
-                    const isSelected = selectedVoice === v.name || (!selectedVoice && isFirst);
-                    const isPreviewing = previewingVoice === v.name;
-                    return (
-                      <div key={v.name}>
-                        {isSectionBreak && (
-                          <p className="text-xs font-semibold text-muted-foreground px-1 pt-2 pb-0.5">Other voices</p>
-                        )}
-                        <div
-                          className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs border transition-all
-                            ${isSelected
-                              ? "border-primary bg-primary/10 text-primary"
-                              : "border-border text-muted-foreground hover:border-muted-foreground/40"}`}
-                        >
-                          <button
-                            className="flex-1 text-left"
-                            onClick={() => { setSelectedVoice(v.name); setOpen(false); synthRef.current.cancel(); setPreviewingVoice(null); }}
-                          >
-                            <span className="font-medium">{v.name}</span>
-                            <span className="ml-2 opacity-60">{v.lang}</span>
-                            {isSelected && <span className="ml-2 text-primary font-semibold">✓</span>}
-                          </button>
-                          <button
-                            onClick={() => previewVoice(v.name)}
-                            title="Preview this voice"
-                            className={`flex-shrink-0 p-1 rounded-lg transition-colors ${isPreviewing ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-primary"}`}
-                          >
-                            {isPreviewing ? <Square className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current" />}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </>
+                langVoices.map((v, idx) => {
+                  const isSelected = selectedVoice === v.name || (!selectedVoice && idx === 0);
+                  const isPreviewing = previewingVoice === v.name;
+                  return (
+                    <div
+                      key={v.name}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs border transition-all
+                        ${isSelected
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-muted-foreground hover:border-muted-foreground/40"}`}
+                    >
+                      <button
+                        className="flex-1 text-left"
+                        onClick={() => { setSelectedVoice(v.name); setOpen(false); synthRef.current.cancel(); setPreviewingVoice(null); }}
+                      >
+                        <span className="font-medium">{v.name}</span>
+                        <span className="ml-2 opacity-60">{v.lang}</span>
+                        {isSelected && <span className="ml-2 text-primary font-semibold">✓</span>}
+                      </button>
+                      <button
+                        onClick={() => previewVoice(v.name)}
+                        title="Preview this voice"
+                        className={`flex-shrink-0 p-1 rounded-lg transition-colors ${isPreviewing ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-primary"}`}
+                      >
+                        {isPreviewing ? <Square className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current" />}
+                      </button>
+                    </div>
+                  );
+                })
               )}
             </div>
           </motion.div>
