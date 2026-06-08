@@ -115,19 +115,25 @@ export default function TTSButton({ language }) {
     synthRef.current.speak(utterance);
   };
 
-  const speak = (text) => {
+  // Use a ref so Home always calls the freshest version with current locale/voices
+  const speakRef = useRef(null);
+  speakRef.current = (text) => {
     if (!enabled) return;
     synthRef.current.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
+    // Always set the correct locale for the chosen language
     utterance.lang = locale;
     if (selectedVoice) {
       const found = voices.find((v) => v.name === selectedVoice);
-      if (found) utterance.voice = found;
+      // Only use the selected voice if it matches the current language; otherwise auto-pick
+      if (found && found.lang.toLowerCase().startsWith(langPrefix)) {
+        utterance.voice = found;
+      } else if (langVoices.length > 0) {
+        utterance.voice = langVoices[0];
+      }
     } else if (langVoices.length > 0) {
-      // Auto-pick best matching voice for the language
       utterance.voice = langVoices[0];
     }
-    // Always set lang so the browser uses the correct language even without an explicit voice
     synthRef.current.speak(utterance);
   };
 
@@ -141,11 +147,11 @@ export default function TTSButton({ language }) {
     }
   };
 
-  // Expose speak via ref pattern — attach to window so Home can call it
+  // Expose speak via stable ref so Home always calls the latest closure
   useEffect(() => {
-    window.__ttsSpeak = speak;
+    window.__ttsSpeak = (text) => speakRef.current?.(text);
     return () => { window.__ttsSpeak = null; };
-  });
+  }, []);
 
   return (
     <div className="relative" dir="ltr" ref={panelRef}>
