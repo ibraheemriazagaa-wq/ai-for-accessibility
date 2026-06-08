@@ -216,6 +216,7 @@ Student's question: ${question}`;
   }
 
   // Subject selection view
+
   if (!selectedSubject) {
     return (
       <div className="min-h-screen bg-background">
