@@ -45,6 +45,7 @@ export default function Home() {
   const [mode, setMode] = useState("tutor"); // "tutor" | "studyplan-subject" | "studyplan" | "test-subject" | "test" | "dashboard"
   const [studyPlanSubject, setStudyPlanSubject] = useState(null);
   const [testSubject, setTestSubject] = useState(null);
+  const [dashboardSubject, setDashboardSubject] = useState(null);
   const chatEndRef = useRef(null);
 
   const speak = (text) => {
@@ -210,9 +211,47 @@ Student's question: ${question}`;
     return <TestGenerator initialSubject={testSubject} onBack={() => setMode("test-subject")} />;
   }
 
+  // Dashboard subject picker
+  if (mode === "dashboard-subject") {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-10">
+          <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => setMode("tutor")} className="rounded-xl">
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <h2 className="font-heading font-semibold text-foreground">My Progress — Pick a Subject</h2>
+          </div>
+        </div>
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <p className="text-muted-foreground text-sm text-center mb-6">Which subject do you want to see progress for?</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+            {subjects.map((subject) => (
+              <SubjectCard
+                key={subject}
+                subject={subject}
+                isSelected={false}
+                onClick={() => {
+                  setDashboardSubject(subjectLabels[subject]);
+                  setMode("dashboard");
+                }}
+              />
+            ))}
+          </div>
+          <button
+            onClick={() => { setDashboardSubject(null); setMode("dashboard"); }}
+            className="w-full py-3 rounded-2xl border-2 border-dashed border-border text-muted-foreground text-sm font-medium hover:border-primary hover:text-primary transition-all"
+          >
+            View All Subjects
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Dashboard mode
   if (mode === "dashboard") {
-    return <Dashboard onBack={() => setMode("tutor")} />;
+    return <Dashboard subject={dashboardSubject} onBack={() => setMode("dashboard-subject")} />;
   }
 
   // Subject selection view
@@ -289,7 +328,7 @@ Student's question: ${question}`;
                 <CalendarDays className="w-4 h-4" />
                 Study Plan
               </Button>
-              <Button variant="outline" onClick={() => setMode("dashboard")} className="rounded-xl gap-2 text-sm">
+              <Button variant="outline" onClick={() => setMode("dashboard-subject")} className="rounded-xl gap-2 text-sm">
                 <BarChart2 className="w-4 h-4" />
                 My Progress
               </Button>

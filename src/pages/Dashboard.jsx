@@ -16,8 +16,8 @@ const SUBJECT_COLORS = {
 
 const getColor = (subject) => SUBJECT_COLORS[subject] || "#6366f1";
 
-export default function Dashboard({ onBack }) {
-  const [selectedSubject, setSelectedSubject] = useState("All");
+export default function Dashboard({ onBack, subject: initialSubject }) {
+  const [selectedSubject, setSelectedSubject] = useState(initialSubject || "All");
 
   const { data: scores = [], isLoading } = useQuery({
     queryKey: ["test-scores"],
