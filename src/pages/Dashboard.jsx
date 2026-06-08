@@ -2,9 +2,9 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { motion } from "framer-motion";
-import { ArrowLeft, TrendingUp, ClipboardList, Award, BookOpen } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, ClipboardList, Award, BookOpen, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, Cell } from "recharts";
 import { format } from "date-fns";
 
 const SUBJECT_COLORS = {
@@ -56,6 +56,31 @@ export default function Dashboard({ onBack, subject: initialSubject }) {
   const avg = filtered.length ? Math.round(filtered.reduce((s, r) => s + r.percentage, 0) / filtered.length) : 0;
   const best = filtered.length ? Math.max(...filtered.map((s) => s.percentage)) : 0;
   const totalTests = filtered.length;
+
+  // Growth chart: when "All" is selected, show each subject's trend as a separate line
+  // Build a unified timeline keyed by attempt index per subject
+  const allSubjectNames = Array.from(new Set(scores.map((s) => s.subject)));
+  const growthBySubject = allSubjectNames.reduce((acc, subj) => {
+    const subScores = scores.filter((s) => s.subject === subj).reverse(); // oldest first
+    acc[subj] = subScores.map((s, i) => ({
+      attempt: i + 1,
+      score: s.percentage,
+      date: s.created_date ? format(new Date(s.created_date), "MMM d") : `#${i + 1}`,
+    }));
+    return acc;
+  }, {});
+
+  // Compute improvement cards per subject (first vs latest score)
+  const improvementCards = allSubjectNames
+    .map((subj) => {
+      const subScores = scores.filter((s) => s.subject === subj).reverse();
+      if (subScores.length < 2) return null;
+      const first = subScores[0].percentage;
+      const latest = subScores[subScores.length - 1].percentage;
+      return { subject: subj, first, latest, delta: latest - first, count: subScores.length };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.delta - a.delta);
 
   return (
     <div className="min-h-screen bg-background">
@@ -121,27 +146,116 @@ export default function Dashboard({ onBack, subject: initialSubject }) {
               ))}
             </div>
 
-            {/* Score over time */}
-            {chartData.length > 1 && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-card border border-border rounded-2xl p-5"
-              >
-                <div className="flex items-center gap-2 mb-4">
-                  <TrendingUp className="w-4 h-4 text-primary" />
-                  <h3 className="font-heading font-semibold text-foreground text-sm">Score Over Time</h3>
+            {/* Growth chart */}
+            {selectedSubject !== "All" && chartData.length > 1 && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                className="bg-card border border-border rounded-2xl p-5">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-primary" />
+                    <h3 className="font-heading font-semibold text-foreground text-sm">Score Improvement — {selectedSubject}</h3>
+                  </div>
+                  {(() => {
+                    const delta = chartData[chartData.length - 1].score - chartData[0].score;
+                    return (
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${delta > 0 ? "bg-green-100 text-green-700" : delta < 0 ? "bg-red-100 text-red-700" : "bg-muted text-muted-foreground"}`}>
+                        {delta > 0 ? "+" : ""}{delta}% overall
+                      </span>
+                    );
+                  })()}
                 </div>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={chartData}>
+                <p className="text-xs text-muted-foreground mb-4">Each point is one test attempt, from oldest to newest.</p>
+                <ResponsiveContainer width="100%" height={220}>
+                  <LineChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="date" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                     <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} unit="%" />
                     <Tooltip
                       contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12 }}
-                      formatter={(v, _, props) => [`${v}%`, props.payload.label]}
+                      formatter={(v) => [`${v}%`, "Score"]}
                     />
-                    <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={{ r: 4, fill: "hsl(var(--primary))" }} />
+                    <Line type="monotone" dataKey="score" stroke={getColor(selectedSubject)} strokeWidth={3}
+                      dot={{ r: 5, fill: getColor(selectedSubject), strokeWidth: 2, stroke: "hsl(var(--card))" }}
+                      activeDot={{ r: 7 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </motion.div>
+            )}
+
+            {/* All subjects growth overview */}
+            {selectedSubject === "All" && improvementCards.length > 0 && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                className="bg-card border border-border rounded-2xl p-5">
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingUp className="w-4 h-4 text-primary" />
+                  <h3 className="font-heading font-semibold text-foreground text-sm">Growth by Subject</h3>
+                </div>
+                <p className="text-xs text-muted-foreground mb-4">Comparing your first test to your most recent test per subject.</p>
+                <div className="space-y-3">
+                  {improvementCards.map((c) => {
+                    const color = getColor(c.subject);
+                    const pct = Math.abs(c.delta);
+                    const isUp = c.delta > 0;
+                    const isFlat = c.delta === 0;
+                    return (
+                      <div key={c.subject}>
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-foreground">{c.subject}</span>
+                            <span className="text-xs text-muted-foreground">{c.count} tests</span>
+                          </div>
+                          <div className={`flex items-center gap-1 text-xs font-bold ${isUp ? "text-green-600" : isFlat ? "text-muted-foreground" : "text-red-500"}`}>
+                            {isUp ? <TrendingUp className="w-3 h-3" /> : isFlat ? <Minus className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                            {isUp ? "+" : isFlat ? "" : "-"}{pct}%
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground w-8 text-right">{c.first}%</span>
+                          <div className="flex-1 h-2.5 bg-muted rounded-full overflow-hidden relative">
+                            <div className="absolute inset-y-0 left-0 rounded-full opacity-30" style={{ width: `${c.first}%`, background: color }} />
+                            <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-700" style={{ width: `${c.latest}%`, background: color }} />
+                          </div>
+                          <span className="text-xs font-semibold text-foreground w-8">{c.latest}%</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Multi-subject trend lines when All is selected and there's data */}
+            {selectedSubject === "All" && allSubjectNames.length > 1 && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                className="bg-card border border-border rounded-2xl p-5">
+                <div className="flex items-center gap-2 mb-1">
+                  <BookOpen className="w-4 h-4 text-accent" />
+                  <h3 className="font-heading font-semibold text-foreground text-sm">Score Trends — All Subjects</h3>
+                </div>
+                <p className="text-xs text-muted-foreground mb-4">Each line shows your score progression per subject (attempt number on X axis).</p>
+                <ResponsiveContainer width="100%" height={260}>
+                  <LineChart margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="attempt" type="number" allowDuplicatedCategory={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} label={{ value: "Attempt", position: "insideBottomRight", offset: -5, fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                    <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} unit="%" />
+                    <Tooltip
+                      contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12 }}
+                      formatter={(v, name) => [`${v}%`, name]}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    {allSubjectNames.map((subj) => (
+                      <Line
+                        key={subj}
+                        data={growthBySubject[subj]}
+                        type="monotone"
+                        dataKey="score"
+                        name={subj}
+                        stroke={getColor(subj)}
+                        strokeWidth={2}
+                        dot={{ r: 3 }}
+                        activeDot={{ r: 5 }}
+                      />
+                    ))}
                   </LineChart>
                 </ResponsiveContainer>
               </motion.div>
