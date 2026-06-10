@@ -1,6 +1,6 @@
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, MessageSquare, Plus, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { X, MessageSquare, Plus, Search, Bot, User } from "lucide-react";
 
 const subjectLabels = {
   english: "English", math: "Math", biology: "Biology", chemistry: "Chemistry",
@@ -16,9 +16,17 @@ const subjectEmojis = {
 };
 
 export default function ChatHistoryPanel({ open, onClose, chatHistory, currentSubject, onSelectSubject, onNewChat }) {
-  const subjectsWithHistory = Object.entries(chatHistory)
-    .filter(([, msgs]) => msgs.length > 0)
-    .sort(([a], [b]) => a.localeCompare(b));
+  const [search, setSearch] = useState("");
+
+  // Only show messages for the current subject
+  const currentMessages = currentSubject ? (chatHistory[currentSubject] || []) : [];
+
+  const filtered = search.trim()
+    ? currentMessages.filter((m) => m.content?.toLowerCase().includes(search.toLowerCase()))
+    : currentMessages;
+
+  const subjectLabel = subjectLabels[currentSubject] || currentSubject || "Subject";
+  const subjectEmoji = subjectEmojis[currentSubject] || "📖";
 
   return (
     <AnimatePresence>
@@ -39,22 +47,39 @@ export default function ChatHistoryPanel({ open, onClose, chatHistory, currentSu
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: "100%", opacity: 0 }}
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
-            className="fixed right-0 top-0 h-full w-72 z-50 bg-card border-l border-border shadow-2xl flex flex-col"
+            className="fixed right-0 top-0 h-full w-80 z-50 bg-card border-l border-border shadow-2xl flex flex-col"
             dir="ltr"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-4 border-b border-border">
               <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-primary" />
-                <h3 className="font-heading font-semibold text-foreground text-sm">Chat History</h3>
+                <span className="text-lg">{subjectEmoji}</span>
+                <div>
+                  <h3 className="font-heading font-semibold text-foreground text-sm">{subjectLabel} History</h3>
+                  <p className="text-xs text-muted-foreground">{currentMessages.length} message{currentMessages.length !== 1 ? "s" : ""}</p>
+                </div>
               </div>
               <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* New chat button */}
+            {/* Search */}
             <div className="px-3 pt-3 pb-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search messages..."
+                  className="w-full pl-8 pr-3 py-2 text-xs rounded-xl border border-border bg-muted/50 focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60"
+                />
+              </div>
+            </div>
+
+            {/* New chat button */}
+            <div className="px-3 pb-2">
               <button
                 onClick={() => { onNewChat(); onClose(); }}
                 className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 border-dashed border-primary/30 text-primary text-sm font-medium hover:bg-primary/5 transition-all"
@@ -64,35 +89,53 @@ export default function ChatHistoryPanel({ open, onClose, chatHistory, currentSu
               </button>
             </div>
 
-            {/* Subject list */}
-            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
-              {subjectsWithHistory.length === 0 ? (
+            {/* Messages list */}
+            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+              {currentMessages.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground text-xs">
                   <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-30" />
                   No chat history yet.<br />Start a conversation!
                 </div>
+              ) : filtered.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground text-xs">
+                  <Search className="w-6 h-6 mx-auto mb-2 opacity-30" />
+                  No messages match your search.
+                </div>
               ) : (
-                subjectsWithHistory.map(([subject, msgs]) => {
-                  const isActive = subject === currentSubject;
-                  const lastMsg = msgs[msgs.length - 1];
-                  const preview = lastMsg?.content?.slice(0, 50) + (lastMsg?.content?.length > 50 ? "…" : "");
+                filtered.map((msg, i) => {
+                  const isUser = msg.role === "user";
+                  const preview = msg.content?.slice(0, 120) + (msg.content?.length > 120 ? "…" : "");
+                  // Highlight search term
+                  const highlighted = search.trim()
+                    ? preview.replace(new RegExp(`(${search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi"), "**$1**")
+                    : preview;
+
                   return (
-                    <button
-                      key={subject}
-                      onClick={() => { onSelectSubject(subject); onClose(); }}
-                      className={`w-full text-left px-3 py-2.5 rounded-xl transition-all flex items-center gap-3 group
-                        ${isActive ? "bg-primary/10 border border-primary/20" : "hover:bg-muted border border-transparent"}`}
+                    <div
+                      key={i}
+                      className={`flex gap-2 px-3 py-2.5 rounded-xl border text-xs
+                        ${isUser ? "bg-primary/5 border-primary/10" : "bg-muted/40 border-border"}`}
                     >
-                      <span className="text-xl flex-shrink-0">{subjectEmojis[subject] || "📖"}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-xs font-semibold truncate ${isActive ? "text-primary" : "text-foreground"}`}>
-                          {subjectLabels[subject] || subject}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">{preview || "No messages"}</p>
-                        <p className="text-xs text-muted-foreground/60 mt-0.5">{msgs.length} message{msgs.length !== 1 ? "s" : ""}</p>
+                      <div className={`flex-shrink-0 w-5 h-5 rounded-lg flex items-center justify-center mt-0.5
+                        ${isUser ? "bg-primary text-white" : "bg-gradient-to-br from-accent to-emerald-500 text-white"}`}>
+                        {isUser ? <User className="w-2.5 h-2.5" /> : <Bot className="w-2.5 h-2.5" />}
                       </div>
-                      <ChevronRight className={`w-3 h-3 flex-shrink-0 transition-opacity ${isActive ? "text-primary opacity-100" : "opacity-0 group-hover:opacity-50"}`} />
-                    </button>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-muted-foreground mb-0.5">
+                          {isUser ? "You" : "Tutor"}
+                        </p>
+                        <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap break-words">
+                          {search.trim() ? (
+                            <span dangerouslySetInnerHTML={{
+                              __html: preview.replace(
+                                new RegExp(`(${search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi"),
+                                '<mark class="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5">$1</mark>'
+                              )
+                            }} />
+                          ) : preview}
+                        </p>
+                      </div>
+                    </div>
                   );
                 })
               )}
