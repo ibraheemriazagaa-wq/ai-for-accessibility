@@ -181,7 +181,8 @@ export default function Home() {
   useEffect(() => {
     const translateMessages = async (msgs) => {
       if (!msgs.length) return msgs;
-      const textsToTranslate = msgs.map((m) => m.content);
+      // Always translate from originalContent (English source) to avoid chained translation drift
+      const textsToTranslate = msgs.map((m) => m.originalContent || m.content);
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `Translate the following messages into ${language} language. Preserve all markdown formatting exactly. Return a JSON object with key "translations" containing an array of translated strings in the same order.\n\nMessages:\n${JSON.stringify(textsToTranslate)}`,
         response_json_schema: {
@@ -191,7 +192,12 @@ export default function Home() {
       });
 
       if (result?.translations?.length === msgs.length) {
-        return msgs.map((m, i) => ({ ...m, content: result.translations[i], language }));
+        return msgs.map((m, i) => ({
+          ...m,
+          originalContent: m.originalContent || m.content, // preserve original on first translation
+          content: result.translations[i],
+          language,
+        }));
       }
       return msgs;
     };
@@ -277,7 +283,7 @@ export default function Home() {
   };
 
   const handleSend = async (question) => {
-    const userMessage = { role: "user", content: question, language };
+    const userMessage = { role: "user", content: question, originalContent: question, language };
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
@@ -304,6 +310,7 @@ Respond in ${language} language. Give a brief 2-3 sentence explanation to accomp
       setMessages((prev) => [...prev, {
         role: "assistant",
         content: textRes,
+        originalContent: textRes,
         imageUrl: imageRes.url,
         language,
       }]);
@@ -360,7 +367,7 @@ ${detailRequest ? `- The student is asking for a DETAILED explanation. Provide a
 Student's question: ${question}`;
 
     const response = await base44.integrations.Core.InvokeLLM({ prompt });
-    setMessages((prev) => [...prev, { role: "assistant", content: response, language }]);
+    setMessages((prev) => [...prev, { role: "assistant", content: response, originalContent: response, language }]);
     setIsLoading(false);
     speak(response);
   };
