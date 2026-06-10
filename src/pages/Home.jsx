@@ -82,7 +82,8 @@ export default function Home() {
   const [language, setLanguage] = useState("english");
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const chatHistoryRef = useRef({}); // persists chat per subject
+  // chatHistoryRef: { [subject]: Array<Array<message>> } — each subject has a list of sessions
+  const chatHistoryRef = useRef({});
   const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
   const [mode, setMode] = useState("tutor");
   const [studyPlanSubject, setStudyPlanSubject] = useState(null);
@@ -180,18 +181,25 @@ export default function Home() {
     };
 
     const translateAll = async () => {
-      // Translate all subject histories in parallel
-      const subjectsWithHistory = Object.entries(chatHistoryRef.current).filter(([, msgs]) => msgs.length > 0);
+      // Translate all sessions across all subjects in parallel
+      const allWork = [];
+      for (const [subj, sessions] of Object.entries(chatHistoryRef.current)) {
+        if (!Array.isArray(sessions)) continue;
+        sessions.forEach((session, si) => {
+          if (session.length > 0) allWork.push({ subj, si, session });
+        });
+      }
       const results = await Promise.all(
-        subjectsWithHistory.map(async ([subj, msgs]) => ({ subj, translated: await translateMessages(msgs) }))
+        allWork.map(async ({ subj, si, session }) => ({ subj, si, translated: await translateMessages(session) }))
       );
-      results.forEach(({ subj, translated }) => {
-        chatHistoryRef.current[subj] = translated;
+      results.forEach(({ subj, si, translated }) => {
+        chatHistoryRef.current[subj][si] = translated;
       });
 
-      // Update active messages from the (now translated) history ref
-      if (selectedSubject) {
-        setMessages(chatHistoryRef.current[selectedSubject] || []);
+      // Also translate the active (unsaved) messages
+      if (messages.length > 0) {
+        const translatedActive = await translateMessages(messages);
+        setMessages(translatedActive);
       }
     };
 
@@ -200,23 +208,33 @@ export default function Home() {
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    // Keep history ref in sync with current messages
-    if (selectedSubject) chatHistoryRef.current[selectedSubject] = messages;
-  }, [messages, isLoading, selectedSubject]);
+  }, [messages, isLoading]);
 
   const handleSubjectSelect = (subject) => {
-    // Save current messages before switching
-    if (selectedSubject) chatHistoryRef.current[selectedSubject] = messages;
+    // Save current session before switching (if non-empty)
+    if (selectedSubject && messages.length > 0) {
+      if (!chatHistoryRef.current[selectedSubject]) chatHistoryRef.current[selectedSubject] = [];
+      const sessions = chatHistoryRef.current[selectedSubject];
+      // Update last session if it matches current messages, else push new
+      if (sessions.length > 0 && sessions[sessions.length - 1] === messages) {
+        sessions[sessions.length - 1] = messages;
+      } else {
+        sessions.push(messages);
+      }
+    }
     setSelectedSubject(subject);
-    // Restore saved history for this subject (or start fresh)
-    setMessages(chatHistoryRef.current[subject] || []);
+    setMessages([]);
     setTranslatedSuggestions(null);
   };
 
   const handleBack = () => {
     window.speechSynthesis.cancel();
-    // Save chat before going back
-    if (selectedSubject) chatHistoryRef.current[selectedSubject] = messages;
+    // Save current session before going back
+    if (selectedSubject && messages.length > 0) {
+      if (!chatHistoryRef.current[selectedSubject]) chatHistoryRef.current[selectedSubject] = [];
+      const sessions = chatHistoryRef.current[selectedSubject];
+      sessions.push([...messages]);
+    }
     setSelectedSubject(null);
     setMode("tutor");
   };
@@ -224,14 +242,14 @@ export default function Home() {
   const handleClearChat = () => {
     window.speechSynthesis.cancel();
     setMessages([]);
-    if (selectedSubject) chatHistoryRef.current[selectedSubject] = [];
   };
 
   const handleNewChat = () => {
     window.speechSynthesis.cancel();
-    // Save current messages to history before clearing
+    // Archive current session before starting fresh
     if (selectedSubject && messages.length > 0) {
-      chatHistoryRef.current[selectedSubject] = messages;
+      if (!chatHistoryRef.current[selectedSubject]) chatHistoryRef.current[selectedSubject] = [];
+      chatHistoryRef.current[selectedSubject].push([...messages]);
     }
     setMessages([]);
   };
