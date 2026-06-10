@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, Sparkles, ArrowLeft, Trash2, ClipboardList, CalendarDays, BarChart2 } from "lucide-react";
+import { BookOpen, Sparkles, ArrowLeft, Trash2, ClipboardList, CalendarDays, BarChart2, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SubjectCard from "@/components/tutor/SubjectCard";
 import LanguageSelector from "@/components/tutor/LanguageSelector";
@@ -13,6 +13,7 @@ import TestGenerator from "@/pages/TestGenerator";
 import VoiceChat from "@/components/tutor/VoiceChat";
 import TTSButton from "@/components/tutor/TTSButton";
 import Dashboard from "@/pages/Dashboard";
+import ChatHistoryPanel from "@/components/tutor/ChatHistoryPanel";
 
 // RTL languages
 const RTL_LANGUAGES = new Set([
@@ -82,6 +83,7 @@ export default function Home() {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const chatHistoryRef = useRef({}); // persists chat per subject
+  const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
   const [mode, setMode] = useState("tutor");
   const [studyPlanSubject, setStudyPlanSubject] = useState(null);
   const [testSubject, setTestSubject] = useState(null);
@@ -176,6 +178,13 @@ export default function Home() {
 
   const handleClearChat = () => {
     window.speechSynthesis.cancel();
+    setMessages([]);
+    if (selectedSubject) chatHistoryRef.current[selectedSubject] = [];
+  };
+
+  const handleNewChat = () => {
+    window.speechSynthesis.cancel();
+    if (selectedSubject) chatHistoryRef.current[selectedSubject] = messages;
     setMessages([]);
     if (selectedSubject) chatHistoryRef.current[selectedSubject] = [];
   };
@@ -504,7 +513,9 @@ Student's question: ${question}`;
               language={language}
             />
             <TTSButton language={language} />
-
+            <Button variant="ghost" size="icon" onClick={() => setHistoryPanelOpen(true)} className="rounded-xl text-muted-foreground" title="Chat History">
+              <History className="w-4 h-4" />
+            </Button>
             {messages.length > 0 && (
               <Button variant="ghost" size="icon" onClick={handleClearChat} className="rounded-xl text-muted-foreground">
                 <Trash2 className="w-4 h-4" />
@@ -567,6 +578,16 @@ Student's question: ${question}`;
           />
         </div>
       </div>
+
+      {/* Chat History Side Panel */}
+      <ChatHistoryPanel
+        open={historyPanelOpen}
+        onClose={() => setHistoryPanelOpen(false)}
+        chatHistory={chatHistoryRef.current}
+        currentSubject={selectedSubject}
+        onSelectSubject={(subject) => handleSubjectSelect(subject)}
+        onNewChat={handleNewChat}
+      />
     </div>
   );
 }
