@@ -518,7 +518,7 @@ Student's question: ${question}`;
               <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
                 <Sparkles className="w-7 h-7 text-primary" />
               </div>
-              <h3 className="font-heading text-xl font-semibold text-foreground mb-2">
+              <h3 className="font-heading text-xl font-semibold text-foreground mb-2" style={{ unicodeBidi: "plaintext" }}>
                 {t.readyToLearn(subjectLabels[selectedSubject])}
               </h3>
               <p className="text-muted-foreground text-sm max-w-sm mx-auto">
