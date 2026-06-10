@@ -43,14 +43,14 @@ export default function SubjectCard({ subject, isSelected, onClick }) {
       whileHover={{ scale: 1.04, y: -2 }}
       whileTap={{ scale: 0.97 }}
       onClick={onClick}
-      className={`relative overflow-hidden rounded-2xl p-5 text-left transition-all duration-200
+      className={`relative overflow-hidden rounded-2xl aspect-square w-full flex flex-col items-center justify-center gap-2 transition-all duration-200
         ${isSelected
           ? `bg-gradient-to-br ${style.gradient} text-white shadow-lg shadow-primary/20 ring-2 ring-white/30`
           : "bg-card text-card-foreground shadow-sm hover:shadow-md border border-border"
         }`}
     >
-      <div className="text-3xl mb-3">{style.emoji}</div>
-      <h3 className={`font-heading font-semibold text-sm ${isSelected ? "text-white" : ""}`}>
+      <div className="text-3xl leading-none">{style.emoji}</div>
+      <h3 className={`font-heading font-semibold text-xs text-center px-2 leading-tight ${isSelected ? "text-white" : ""}`}>
         {label}
       </h3>
       {isSelected && (

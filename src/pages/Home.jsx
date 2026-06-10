@@ -153,14 +153,14 @@ export default function Home() {
     if (window.__ttsSpeak) window.__ttsSpeak(text);
   };
 
-  // Re-translate all assistant messages when language changes
+  // Re-translate ALL subject chat histories (and active messages) when language changes
   useEffect(() => {
-    if (!messages.length) return;
+    const translateMessages = async (msgs) => {
+      if (!msgs.length) return msgs;
+      const indices = msgs.map((m, i) => (m.role === "assistant" ? i : null)).filter((i) => i !== null);
+      if (!indices.length) return msgs.map((m) => ({ ...m, language }));
 
-    const translate = async () => {
-      const indices = messages.map((m, i) => (m.role === "assistant" ? i : null)).filter((i) => i !== null);
-      const textsToTranslate = indices.map((i) => messages[i].content);
-
+      const textsToTranslate = indices.map((i) => msgs[i].content);
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `Translate the following messages into ${language} language. Preserve all markdown formatting exactly. Return a JSON object with key "translations" containing an array of translated strings in the same order.\n\nMessages:\n${JSON.stringify(textsToTranslate)}`,
         response_json_schema: {
@@ -170,18 +170,32 @@ export default function Home() {
       });
 
       if (result?.translations?.length === indices.length) {
-        setMessages((prev) => {
-          const updated = [...prev];
-          indices.forEach((msgIdx, i) => {
-            updated[msgIdx] = { ...updated[msgIdx], content: result.translations[i], language };
-          });
-          // Also update language tag on user messages for correct RTL direction
-          return updated.map((m) => m.role === "user" ? { ...m, language } : m);
+        const updated = [...msgs];
+        indices.forEach((msgIdx, i) => {
+          updated[msgIdx] = { ...updated[msgIdx], content: result.translations[i], language };
         });
+        return updated.map((m) => m.role === "user" ? { ...m, language } : m);
+      }
+      return msgs;
+    };
+
+    const translateAll = async () => {
+      // Translate all subject histories in parallel
+      const subjectsWithHistory = Object.entries(chatHistoryRef.current).filter(([, msgs]) => msgs.length > 0);
+      const results = await Promise.all(
+        subjectsWithHistory.map(async ([subj, msgs]) => ({ subj, translated: await translateMessages(msgs) }))
+      );
+      results.forEach(({ subj, translated }) => {
+        chatHistoryRef.current[subj] = translated;
+      });
+
+      // Update active messages from the (now translated) history ref
+      if (selectedSubject) {
+        setMessages(chatHistoryRef.current[selectedSubject] || []);
       }
     };
 
-    translate();
+    translateAll();
   }, [language]);
 
   useEffect(() => {
