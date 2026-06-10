@@ -229,9 +229,7 @@ export default function Home() {
 
   const handleNewChat = () => {
     window.speechSynthesis.cancel();
-    if (selectedSubject) chatHistoryRef.current[selectedSubject] = messages;
     setMessages([]);
-    if (selectedSubject) chatHistoryRef.current[selectedSubject] = [];
   };
 
   // Detect language from voice transcript and auto-switch
