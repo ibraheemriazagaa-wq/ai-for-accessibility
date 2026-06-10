@@ -53,11 +53,15 @@ export default function TTSButton({ language }) {
   }, []);
 
   // Only show voices matching the selected language
+  // Normalize both sides: replace underscores with dashes, lowercase, match by prefix
   const langPrefix = locale.split("-")[0].toLowerCase();
-  const langVoices = voices.filter((v) => v.lang.toLowerCase().startsWith(langPrefix));
+  const langVoices = voices.filter((v) => {
+    const normalized = v.lang.toLowerCase().replace(/_/g, "-");
+    return normalized.startsWith(langPrefix);
+  });
 
   const SAMPLE_PHRASES = {
-    "en": "Hello! This is how I sound.", "ar": "مرحباً! هذا هو صوتي.",
+    "en": "Hello! This is how I sound.", "ar": "مرحباً، هذا هو صوتي.",
     "fr": "Bonjour! Voici ma voix.", "es": "¡Hola! Así es como sueno.",
     "de": "Hallo! So klingt meine Stimme.", "it": "Ciao! Ecco come suono.",
     "pt": "Olá! Assim é como eu soo.", "ru": "Привет! Вот как я звучу.",
@@ -95,6 +99,32 @@ export default function TTSButton({ language }) {
     utterance.onend = () => setPreviewingVoice(null);
     utterance.onerror = () => setPreviewingVoice(null);
     synthRef.current.speak(utterance);
+  };
+
+  // API-based preview for languages with no browser voices
+  const [apiPreviewing, setApiPreviewing] = useState(false);
+  const apiAudioRef = useRef(null);
+
+  const previewApiVoice = async () => {
+    if (apiPreviewing) {
+      apiAudioRef.current?.pause();
+      setApiPreviewing(false);
+      return;
+    }
+    setApiPreviewing(true);
+    const result = await base44.integrations.Core.GenerateSpeech({
+      text: samplePhrase,
+      language_code: langPrefix,
+    });
+    if (result?.url) {
+      const audio = new Audio(result.url);
+      apiAudioRef.current = audio;
+      audio.onended = () => setApiPreviewing(false);
+      audio.onerror = () => setApiPreviewing(false);
+      audio.play();
+    } else {
+      setApiPreviewing(false);
+    }
   };
 
   // Use a ref so Home always calls the freshest version with current locale/voices
@@ -188,14 +218,27 @@ export default function TTSButton({ language }) {
             <p className="text-xs text-muted-foreground mb-3">
               {langVoices.length > 0
                 ? <><span className="font-semibold text-foreground">{langVoices.length}</span> {language} voices available</>
-                : <>No native voices for this language — the browser will still read in {language}</>
+                : <><span className="font-semibold text-foreground">AI voice</span> will be used for {language}</>
               }
             </p>
             <div className="max-h-64 overflow-y-auto space-y-1">
               {langVoices.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-4">
-                  Your browser has no installed voices for this language. TTS will still speak in {language} using the browser default.
-                </p>
+                <div
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs border border-primary bg-primary/10 text-primary"
+                >
+                  <div className="flex-1 text-left">
+                    <span className="font-medium">AI Voice ({language})</span>
+                    <span className="ml-2 opacity-60">via GenerateSpeech</span>
+                    <span className="ml-2 font-semibold">✓</span>
+                  </div>
+                  <button
+                    onClick={previewApiVoice}
+                    title="Preview AI voice"
+                    className={`flex-shrink-0 p-1 rounded-lg transition-colors ${apiPreviewing ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-primary"}`}
+                  >
+                    {apiPreviewing ? <Square className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current" />}
+                  </button>
+                </div>
               ) : (
                 langVoices.map((v, idx) => {
                   const isSelected = selectedVoice === v.name || (!selectedVoice && idx === 0);
