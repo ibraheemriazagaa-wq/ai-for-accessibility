@@ -24,6 +24,7 @@ export default function TTSButton({ language }) {
   const [voices, setVoices] = useState([]);
   const [selectedVoice, setSelectedVoice] = useState(null);
   const [previewingVoice, setPreviewingVoice] = useState(null);
+  const [speed, setSpeed] = useState(1.0);
   const synthRef = useRef(window.speechSynthesis);
   const panelRef = useRef(null);
 
@@ -94,7 +95,7 @@ export default function TTSButton({ language }) {
     const utterance = new SpeechSynthesisUtterance(samplePhrase);
     utterance.voice = voice;
     utterance.lang = locale;
-    utterance.rate = 0.95;
+    utterance.rate = speed;
     setPreviewingVoice(voiceName);
     utterance.onend = () => setPreviewingVoice(null);
     utterance.onerror = () => setPreviewingVoice(null);
@@ -143,6 +144,7 @@ export default function TTSButton({ language }) {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = locale;
       utterance.voice = voiceToUse;
+      utterance.rate = speed;
       synthRef.current.speak(utterance);
     } else {
       // No browser voice for this language — fall back to GenerateSpeech API
@@ -210,11 +212,34 @@ export default function TTSButton({ language }) {
             className="absolute right-0 top-11 z-50 bg-card border border-border rounded-2xl shadow-xl p-4 w-72"
           >
             <div className="flex items-center justify-between mb-3">
-              <p className="font-heading font-semibold text-sm text-foreground">Choose Voice</p>
+              <p className="font-heading font-semibold text-sm text-foreground">TTS Settings</p>
               <button onClick={() => setOpen(false)}>
                 <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
               </button>
             </div>
+
+            {/* Speed slider */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-xs font-semibold text-foreground">Speaking Speed</p>
+                <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-0.5 rounded-full">{speed.toFixed(1)}x</span>
+              </div>
+              <input
+                type="range"
+                min="0.5"
+                max="2.0"
+                step="0.1"
+                value={speed}
+                onChange={(e) => setSpeed(parseFloat(e.target.value))}
+                className="w-full h-1.5 rounded-full appearance-none bg-muted cursor-pointer accent-primary"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground/60 mt-1">
+                <span>0.5x</span>
+                <span>1.0x</span>
+                <span>2.0x</span>
+              </div>
+            </div>
+
             <p className="text-xs text-muted-foreground mb-3">
               {langVoices.length > 0
                 ? <><span className="font-semibold text-foreground">{langVoices.length}</span> {language} voices available</>

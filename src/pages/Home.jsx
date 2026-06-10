@@ -590,7 +590,7 @@ Student's question: ${question}`;
             <div className="flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-primary" />
               <h2 className="font-heading font-semibold text-foreground">
-                {subjectLabels[selectedSubject]}
+                {translatedSubjectLabels[selectedSubject]}
               </h2>
             </div>
           </div>
@@ -627,7 +627,7 @@ Student's question: ${question}`;
                 <Sparkles className="w-7 h-7 text-primary" />
               </div>
               <h3 className="font-heading text-xl font-semibold text-foreground mb-2" style={{ unicodeBidi: "plaintext" }}>
-                {t.readyToLearn(subjectLabels[selectedSubject])}
+                {t.readyToLearn(translatedSubjectLabels[selectedSubject])}
               </h3>
               <p className="text-muted-foreground text-sm max-w-sm mx-auto">
                 {t.chatSubtitle}
@@ -663,7 +663,7 @@ Student's question: ${question}`;
           <ChatInput
             onSend={handleSend}
             isLoading={isLoading}
-            placeholder={t.askAbout(subjectLabels[selectedSubject])}
+            placeholder={t.askAbout(translatedSubjectLabels[selectedSubject])}
           />
         </div>
       </div>
