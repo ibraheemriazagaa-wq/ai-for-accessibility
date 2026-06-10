@@ -196,7 +196,7 @@ export default function Home() {
   };
 
   const handleSend = async (question) => {
-    const userMessage = { role: "user", content: question };
+    const userMessage = { role: "user", content: question, language };
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
@@ -224,6 +224,7 @@ Respond in ${language} language. Give a brief 2-3 sentence explanation to accomp
         role: "assistant",
         content: textRes,
         imageUrl: imageRes.url,
+        language,
       }]);
       setIsLoading(false);
       speak(textRes);
@@ -278,7 +279,7 @@ ${detailRequest ? `- The student is asking for a DETAILED explanation. Provide a
 Student's question: ${question}`;
 
     const response = await base44.integrations.Core.InvokeLLM({ prompt });
-    setMessages((prev) => [...prev, { role: "assistant", content: response }]);
+    setMessages((prev) => [...prev, { role: "assistant", content: response, language }]);
     setIsLoading(false);
     speak(response);
   };

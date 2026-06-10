@@ -2,8 +2,20 @@ import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import { Bot, User } from "lucide-react";
 
+const RTL_LANGUAGES = new Set([
+  "arabic", "arabic_egyptian", "arabic_levantine", "arabic_gulf", "arabic_maghrebi",
+  "arabic_iraqi", "arabic_sudanese", "arabic_yemeni", "arabic_libyan", "arabic_tunisian",
+  "arabic_algerian", "moroccan_arabic", "classical_arabic", "maltese_arabic",
+  "hebrew", "persian", "dari", "urdu", "sindhi", "pashto", "balochi",
+  "uyghur", "kurdish_sorani", "kashmiri", "dhivehi", "syriac", "aramaic",
+  "assyrian", "coptic", "berber_tamazight",
+]);
+
 export default function ChatMessage({ message }) {
   const isUser = message.role === "user";
+  // Each message carries the language it was sent/received in
+  const msgLang = message.language || "english";
+  const dir = RTL_LANGUAGES.has(msgLang) ? "rtl" : "ltr";
 
   return (
     <motion.div
@@ -22,6 +34,8 @@ export default function ChatMessage({ message }) {
         {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
       </div>
       <div
+        dir={dir}
+        style={{ unicodeBidi: "plaintext" }}
         className={`max-w-[80%] rounded-2xl px-4 py-3 ${
           isUser
             ? "bg-primary text-primary-foreground rounded-tr-md"
