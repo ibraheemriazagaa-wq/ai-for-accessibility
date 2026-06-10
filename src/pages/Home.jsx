@@ -81,6 +81,7 @@ export default function Home() {
   const [language, setLanguage] = useState("english");
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const chatHistoryRef = useRef({}); // persists chat per subject
   const [mode, setMode] = useState("tutor");
   const [studyPlanSubject, setStudyPlanSubject] = useState(null);
   const [testSubject, setTestSubject] = useState(null);
@@ -152,24 +153,31 @@ export default function Home() {
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isLoading]);
+    // Keep history ref in sync with current messages
+    if (selectedSubject) chatHistoryRef.current[selectedSubject] = messages;
+  }, [messages, isLoading, selectedSubject]);
 
   const handleSubjectSelect = (subject) => {
+    // Save current messages before switching
+    if (selectedSubject) chatHistoryRef.current[selectedSubject] = messages;
     setSelectedSubject(subject);
-    setMessages([]);
+    // Restore saved history for this subject (or start fresh)
+    setMessages(chatHistoryRef.current[subject] || []);
     setTranslatedSuggestions(null);
   };
 
   const handleBack = () => {
     window.speechSynthesis.cancel();
+    // Save chat before going back
+    if (selectedSubject) chatHistoryRef.current[selectedSubject] = messages;
     setSelectedSubject(null);
-    setMessages([]);
     setMode("tutor");
   };
 
   const handleClearChat = () => {
     window.speechSynthesis.cancel();
     setMessages([]);
+    if (selectedSubject) chatHistoryRef.current[selectedSubject] = [];
   };
 
   // Detect language from voice transcript and auto-switch
