@@ -27,6 +27,8 @@ export default function TTSButton({ language }) {
   const [speed, setSpeed] = useState(1.0);
   const synthRef = useRef(window.speechSynthesis);
   const panelRef = useRef(null);
+  const currentTextRef = useRef(null); // track text currently being spoken
+  const speedRef = useRef(1.0); // always-fresh speed for mid-speech restarts
 
   const locale = LANGUAGE_LOCALES[language] || "en-US";
 
@@ -44,10 +46,17 @@ export default function TTSButton({ language }) {
     setSelectedVoice(null);
   }, [language]);
 
-  // Close panel on outside click
+  // Keep speedRef in sync
+  useEffect(() => { speedRef.current = speed; }, [speed]);
+
+  // Close panel on outside click — also stop speech
   useEffect(() => {
     const handler = (e) => {
-      if (panelRef.current && !panelRef.current.contains(e.target)) setOpen(false);
+      if (panelRef.current && !panelRef.current.contains(e.target)) {
+        setOpen(false);
+        synthRef.current.cancel();
+        currentTextRef.current = null;
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -133,6 +142,7 @@ export default function TTSButton({ language }) {
   speakRef.current = async (text) => {
     if (!enabled) return;
     synthRef.current.cancel();
+    currentTextRef.current = text;
 
     // If we have a matching browser voice, use it directly
     const found = selectedVoice
@@ -144,7 +154,9 @@ export default function TTSButton({ language }) {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = locale;
       utterance.voice = voiceToUse;
-      utterance.rate = speed;
+      utterance.rate = speedRef.current;
+      utterance.onend = () => { currentTextRef.current = null; };
+      utterance.onerror = () => { currentTextRef.current = null; };
       synthRef.current.speak(utterance);
     } else {
       // No browser voice for this language — fall back to GenerateSpeech API
@@ -155,12 +167,14 @@ export default function TTSButton({ language }) {
         });
         if (result?.url) {
           const audio = new Audio(result.url);
+          audio.onended = () => { currentTextRef.current = null; };
           audio.play();
         }
       } catch {
         // Silently fail — still set lang and let browser attempt it
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = locale;
+        utterance.onend = () => { currentTextRef.current = null; };
         synthRef.current.speak(utterance);
       }
     }
@@ -169,6 +183,7 @@ export default function TTSButton({ language }) {
   const toggle = () => {
     if (enabled) {
       synthRef.current.cancel();
+      currentTextRef.current = null;
       setEnabled(false);
     } else {
       setEnabled(true);
@@ -213,7 +228,7 @@ export default function TTSButton({ language }) {
           >
             <div className="flex items-center justify-between mb-3">
               <p className="font-heading font-semibold text-sm text-foreground">TTS Settings</p>
-              <button onClick={() => setOpen(false)}>
+              <button onClick={() => { setOpen(false); synthRef.current.cancel(); currentTextRef.current = null; }}>
                 <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
               </button>
             </div>
@@ -230,7 +245,15 @@ export default function TTSButton({ language }) {
                 max="2.0"
                 step="0.1"
                 value={speed}
-                onChange={(e) => setSpeed(parseFloat(e.target.value))}
+                onChange={(e) => {
+                  const newSpeed = parseFloat(e.target.value);
+                  setSpeed(newSpeed);
+                  speedRef.current = newSpeed;
+                  // If currently speaking, restart with new speed
+                  if (currentTextRef.current && synthRef.current.speaking) {
+                    speakRef.current(currentTextRef.current);
+                  }
+                }}
                 className="w-full h-1.5 rounded-full appearance-none bg-muted cursor-pointer accent-primary"
               />
               <div className="flex justify-between text-xs text-muted-foreground/60 mt-1">
