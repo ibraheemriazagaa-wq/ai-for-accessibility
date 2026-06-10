@@ -28,6 +28,7 @@ export default function TTSButton({ language }) {
   const synthRef = useRef(window.speechSynthesis);
   const panelRef = useRef(null);
   const currentTextRef = useRef(null); // track text currently being spoken
+  const charIndexRef = useRef(0); // track last spoken character index via boundary events
   const speedRef = useRef(1.0); // always-fresh speed for mid-speech restarts
 
   const locale = LANGUAGE_LOCALES[language] || "en-US";
@@ -149,6 +150,7 @@ export default function TTSButton({ language }) {
     if (!text) return;
     synthRef.current.cancel();
     currentTextRef.current = text;
+    charIndexRef.current = 0;
 
     // If we have a matching browser voice, use it directly
     const found = selectedVoice
@@ -161,8 +163,9 @@ export default function TTSButton({ language }) {
       utterance.lang = locale;
       utterance.voice = voiceToUse;
       utterance.rate = speedRef.current;
-      utterance.onend = () => { currentTextRef.current = null; };
-      utterance.onerror = () => { currentTextRef.current = null; };
+      utterance.onboundary = (e) => { if (e.charIndex != null) charIndexRef.current = e.charIndex; };
+      utterance.onend = () => { currentTextRef.current = null; charIndexRef.current = 0; };
+      utterance.onerror = () => { currentTextRef.current = null; charIndexRef.current = 0; };
       synthRef.current.speak(utterance);
     } else {
       // No browser voice for this language — fall back to GenerateSpeech API
@@ -255,11 +258,13 @@ export default function TTSButton({ language }) {
                   const newSpeed = parseFloat(e.target.value);
                   setSpeed(newSpeed);
                   speedRef.current = newSpeed;
-                  // If currently speaking, cancel then restart after browser flush
+                  // Resume from last known word boundary position
                   if (currentTextRef.current && synthRef.current.speaking) {
-                    const textToRepeat = currentTextRef.current;
+                    const resumeText = currentTextRef.current.slice(charIndexRef.current);
                     synthRef.current.cancel();
-                    setTimeout(() => speakRef.current(textToRepeat), 150);
+                    setTimeout(() => {
+                      if (resumeText.trim()) speakRef.current(resumeText);
+                    }, 150);
                   }
                 }}
                 className="w-full h-1.5 rounded-full appearance-none bg-muted cursor-pointer accent-primary"
