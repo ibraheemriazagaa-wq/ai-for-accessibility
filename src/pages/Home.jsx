@@ -153,6 +153,37 @@ export default function Home() {
     if (window.__ttsSpeak) window.__ttsSpeak(text);
   };
 
+  // Re-translate all assistant messages when language changes
+  useEffect(() => {
+    if (!messages.length) return;
+
+    const translate = async () => {
+      const indices = messages.map((m, i) => (m.role === "assistant" ? i : null)).filter((i) => i !== null);
+      const textsToTranslate = indices.map((i) => messages[i].content);
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Translate the following messages into ${language} language. Preserve all markdown formatting exactly. Return a JSON object with key "translations" containing an array of translated strings in the same order.\n\nMessages:\n${JSON.stringify(textsToTranslate)}`,
+        response_json_schema: {
+          type: "object",
+          properties: { translations: { type: "array", items: { type: "string" } } },
+        },
+      });
+
+      if (result?.translations?.length === indices.length) {
+        setMessages((prev) => {
+          const updated = [...prev];
+          indices.forEach((msgIdx, i) => {
+            updated[msgIdx] = { ...updated[msgIdx], content: result.translations[i], language };
+          });
+          // Also update language tag on user messages for correct RTL direction
+          return updated.map((m) => m.role === "user" ? { ...m, language } : m);
+        });
+      }
+    };
+
+    translate();
+  }, [language]);
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     // Keep history ref in sync with current messages
