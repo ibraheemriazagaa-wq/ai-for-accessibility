@@ -91,7 +91,9 @@ export default function Home() {
   const [dashboardSubject, setDashboardSubject] = useState(null);
   const [uiTexts, setUiTexts] = useState(DEFAULT_UI_TEXT);
   const [translatedSuggestions, setTranslatedSuggestions] = useState(null);
+  const [translatedSubjectLabels, setTranslatedSubjectLabels] = useState(subjectLabels);
   const translationCache = useRef({ english: DEFAULT_UI_TEXT });
+  const subjectLabelCache = useRef({ english: subjectLabels });
   const suggestionsCache = useRef({});
   const chatEndRef = useRef(null);
 
@@ -99,26 +101,47 @@ export default function Home() {
   useEffect(() => {
     if (language === "english") {
       setUiTexts(DEFAULT_UI_TEXT);
+      setTranslatedSubjectLabels(subjectLabels);
       return;
     }
+
+    // UI strings
     if (translationCache.current[language]) {
       setUiTexts(translationCache.current[language]);
-      return;
+    } else {
+      setUiTexts(DEFAULT_UI_TEXT);
+      const keys = Object.entries(DEFAULT_UI_TEXT).map(([k, v]) => `"${k}": "${v}"`).join(",\n");
+      base44.integrations.Core.InvokeLLM({
+        prompt: `Translate the following UI strings into ${language} language. Keep {subject} placeholders exactly as-is. Return ONLY a valid JSON object with the same keys.\n\n{\n${keys}\n}`,
+        response_json_schema: {
+          type: "object",
+          properties: Object.fromEntries(Object.keys(DEFAULT_UI_TEXT).map(k => [k, { type: "string" }])),
+        },
+      }).then((result) => {
+        const merged = { ...DEFAULT_UI_TEXT, ...result };
+        translationCache.current[language] = merged;
+        setUiTexts(merged);
+      });
     }
-    // Show default UI immediately, then update when translation arrives
-    setUiTexts(DEFAULT_UI_TEXT);
-    const keys = Object.entries(DEFAULT_UI_TEXT).map(([k, v]) => `"${k}": "${v}"`).join(",\n");
-    base44.integrations.Core.InvokeLLM({
-      prompt: `Translate the following UI strings into ${language} language. Keep {subject} placeholders exactly as-is. Return ONLY a valid JSON object with the same keys.\n\n{\n${keys}\n}`,
-      response_json_schema: {
-        type: "object",
-        properties: Object.fromEntries(Object.keys(DEFAULT_UI_TEXT).map(k => [k, { type: "string" }])),
-      },
-    }).then((result) => {
-      const merged = { ...DEFAULT_UI_TEXT, ...result };
-      translationCache.current[language] = merged;
-      setUiTexts(merged);
-    });
+
+    // Subject labels
+    if (subjectLabelCache.current[language]) {
+      setTranslatedSubjectLabels(subjectLabelCache.current[language]);
+    } else {
+      setTranslatedSubjectLabels(subjectLabels);
+      const subjectEntries = Object.entries(subjectLabels).map(([k, v]) => `"${k}": "${v}"`).join(",\n");
+      base44.integrations.Core.InvokeLLM({
+        prompt: `Translate the following subject names into ${language} language. Return ONLY a valid JSON object with the same keys.\n\n{\n${subjectEntries}\n}`,
+        response_json_schema: {
+          type: "object",
+          properties: Object.fromEntries(Object.keys(subjectLabels).map(k => [k, { type: "string" }])),
+        },
+      }).then((result) => {
+        const merged = { ...subjectLabels, ...result };
+        subjectLabelCache.current[language] = merged;
+        setTranslatedSubjectLabels(merged);
+      });
+    }
   }, [language]);
 
   // Translate suggestions when language or subject changes
@@ -653,6 +676,7 @@ Student's question: ${question}`;
         currentSubject={selectedSubject}
         onSelectSubject={(subject) => handleSubjectSelect(subject)}
         onNewChat={handleNewChat}
+        translatedSubjectLabel={translatedSubjectLabels[selectedSubject]}
       />
     </div>
   );

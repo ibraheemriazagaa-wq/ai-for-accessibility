@@ -16,11 +16,11 @@ const subjectEmojis = {
 };
 
 // chatHistory shape: { [subject]: Array<Array<message>> }  (list of sessions)
-export default function ChatHistoryPanel({ open, onClose, chatHistory, currentSubject, onNewChat }) {
+export default function ChatHistoryPanel({ open, onClose, chatHistory, currentSubject, onNewChat, translatedSubjectLabel }) {
   const [search, setSearch] = useState("");
   const [expandedSession, setExpandedSession] = useState(null);
 
-  const subjectLabel = subjectLabels[currentSubject] || currentSubject || "Subject";
+  const subjectLabel = translatedSubjectLabel || subjectLabels[currentSubject] || currentSubject || "Subject";
   const subjectEmoji = subjectEmojis[currentSubject] || "📖";
 
   // sessions is an array of message arrays for the current subject
