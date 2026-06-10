@@ -229,6 +229,10 @@ export default function Home() {
 
   const handleNewChat = () => {
     window.speechSynthesis.cancel();
+    // Save current messages to history before clearing
+    if (selectedSubject && messages.length > 0) {
+      chatHistoryRef.current[selectedSubject] = messages;
+    }
     setMessages([]);
   };
 
