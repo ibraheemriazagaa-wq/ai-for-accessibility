@@ -181,8 +181,6 @@ export default function Home() {
   useEffect(() => {
     const translateMessages = async (msgs) => {
       if (!msgs.length) return msgs;
-      // Translate both user and assistant messages so sidebar titles stay consistent
-      const indices = msgs.map((m, i) => i);
       const textsToTranslate = msgs.map((m) => m.content);
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `Translate the following messages into ${language} language. Preserve all markdown formatting exactly. Return a JSON object with key "translations" containing an array of translated strings in the same order.\n\nMessages:\n${JSON.stringify(textsToTranslate)}`,
@@ -192,7 +190,7 @@ export default function Home() {
         },
       });
 
-      if (result?.translations?.length === indices.length) {
+      if (result?.translations?.length === msgs.length) {
         return msgs.map((m, i) => ({ ...m, content: result.translations[i], language }));
       }
       return msgs;
