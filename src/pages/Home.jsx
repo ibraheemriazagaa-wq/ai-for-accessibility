@@ -181,10 +181,9 @@ export default function Home() {
   useEffect(() => {
     const translateMessages = async (msgs) => {
       if (!msgs.length) return msgs;
-      const indices = msgs.map((m, i) => (m.role === "assistant" ? i : null)).filter((i) => i !== null);
-      if (!indices.length) return msgs.map((m) => ({ ...m, language }));
-
-      const textsToTranslate = indices.map((i) => msgs[i].content);
+      // Translate both user and assistant messages so sidebar titles stay consistent
+      const indices = msgs.map((m, i) => i);
+      const textsToTranslate = msgs.map((m) => m.content);
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `Translate the following messages into ${language} language. Preserve all markdown formatting exactly. Return a JSON object with key "translations" containing an array of translated strings in the same order.\n\nMessages:\n${JSON.stringify(textsToTranslate)}`,
         response_json_schema: {
@@ -194,11 +193,7 @@ export default function Home() {
       });
 
       if (result?.translations?.length === indices.length) {
-        const updated = [...msgs];
-        indices.forEach((msgIdx, i) => {
-          updated[msgIdx] = { ...updated[msgIdx], content: result.translations[i], language };
-        });
-        return updated.map((m) => m.role === "user" ? { ...m, language } : m);
+        return msgs.map((m, i) => ({ ...m, content: result.translations[i], language }));
       }
       return msgs;
     };
