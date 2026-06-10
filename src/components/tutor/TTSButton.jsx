@@ -139,8 +139,14 @@ export default function TTSButton({ language }) {
 
   // Use a ref so Home always calls the freshest version with current locale/voices
   const speakRef = useRef(null);
-  speakRef.current = async (text) => {
+  speakRef.current = async (rawText) => {
     if (!enabled) return;
+    // Strip emojis and markdown symbols before speaking
+    const text = rawText
+      .replace(/[\u{1F000}-\u{1FFFF}|\u{2600}-\u{27BF}|\u{1F300}-\u{1F9FF}|\u{FE00}-\u{FEFF}]/gu, "")
+      .replace(/[*_`#>~|]/g, "")
+      .trim();
+    if (!text) return;
     synthRef.current.cancel();
     currentTextRef.current = text;
 
@@ -249,9 +255,11 @@ export default function TTSButton({ language }) {
                   const newSpeed = parseFloat(e.target.value);
                   setSpeed(newSpeed);
                   speedRef.current = newSpeed;
-                  // If currently speaking, restart with new speed
+                  // If currently speaking, cancel then restart after browser flush
                   if (currentTextRef.current && synthRef.current.speaking) {
-                    speakRef.current(currentTextRef.current);
+                    const textToRepeat = currentTextRef.current;
+                    synthRef.current.cancel();
+                    setTimeout(() => speakRef.current(textToRepeat), 150);
                   }
                 }}
                 className="w-full h-1.5 rounded-full appearance-none bg-muted cursor-pointer accent-primary"
