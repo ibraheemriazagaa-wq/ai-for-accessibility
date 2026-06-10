@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, MessageSquare, Plus, Search, Bot, User } from "lucide-react";
+import { X, MessageSquare, Plus, Search, Bot } from "lucide-react";
 
 const subjectLabels = {
   english: "English", math: "Math", biology: "Biology", chemistry: "Chemistry",
@@ -21,9 +21,12 @@ export default function ChatHistoryPanel({ open, onClose, chatHistory, currentSu
   // Only show messages for the current subject
   const currentMessages = currentSubject ? (chatHistory[currentSubject] || []) : [];
 
+  // Only assistant messages
+  const assistantMessages = currentMessages.filter((m) => m.role === "assistant");
+
   const filtered = search.trim()
-    ? currentMessages.filter((m) => m.content?.toLowerCase().includes(search.toLowerCase()))
-    : currentMessages;
+    ? assistantMessages.filter((m) => m.content?.toLowerCase().includes(search.toLowerCase()))
+    : assistantMessages.length > 0 ? [assistantMessages[assistantMessages.length - 1]] : [];
 
   const subjectLabel = subjectLabels[currentSubject] || currentSubject || "Subject";
   const subjectEmoji = subjectEmojis[currentSubject] || "📖";
@@ -103,27 +106,18 @@ export default function ChatHistoryPanel({ open, onClose, chatHistory, currentSu
                 </div>
               ) : (
                 filtered.map((msg, i) => {
-                  const isUser = msg.role === "user";
                   const preview = msg.content?.slice(0, 120) + (msg.content?.length > 120 ? "…" : "");
-                  // Highlight search term
-                  const highlighted = search.trim()
-                    ? preview.replace(new RegExp(`(${search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi"), "**$1**")
-                    : preview;
 
                   return (
                     <div
                       key={i}
-                      className={`flex gap-2 px-3 py-2.5 rounded-xl border text-xs
-                        ${isUser ? "bg-primary/5 border-primary/10" : "bg-muted/40 border-border"}`}
+                      className="flex gap-2 px-3 py-2.5 rounded-xl border text-xs bg-muted/40 border-border"
                     >
-                      <div className={`flex-shrink-0 w-5 h-5 rounded-lg flex items-center justify-center mt-0.5
-                        ${isUser ? "bg-primary text-white" : "bg-gradient-to-br from-accent to-emerald-500 text-white"}`}>
-                        {isUser ? <User className="w-2.5 h-2.5" /> : <Bot className="w-2.5 h-2.5" />}
+                      <div className="flex-shrink-0 w-5 h-5 rounded-lg flex items-center justify-center mt-0.5 bg-gradient-to-br from-accent to-emerald-500 text-white">
+                        <Bot className="w-2.5 h-2.5" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-muted-foreground mb-0.5">
-                          {isUser ? "You" : "Tutor"}
-                        </p>
+                        <p className="text-xs font-semibold text-muted-foreground mb-0.5">Last response</p>
                         <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap break-words">
                           {search.trim() ? (
                             <span dangerouslySetInnerHTML={{
