@@ -162,7 +162,7 @@ Return a JSON object with this structure:
   };
 
   const handleBack = () => {
-    if (phase === "mode-select") setPhase("subject-select");
+    if (phase === "mode-select") initialSubject ? onBack() : setPhase("subject-select");
     else if (phase === "setup") setPhase("mode-select");
     else onBack();
   };
