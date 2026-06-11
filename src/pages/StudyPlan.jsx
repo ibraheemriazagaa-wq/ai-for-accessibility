@@ -54,22 +54,21 @@ const PLAN_JSON_SCHEMA = {
 };
 
 export default function StudyPlan({ onBack, subject: initialSubject }) {
-  // phases: mode-select | subject-select | setup | loading | plan
-  const [phase, setPhase] = useState("mode-select");
+  // phases: subject-select | mode-select | setup | loading | plan
+  const [phase, setPhase] = useState("subject-select");
   const [selectedSubject, setSelectedSubject] = useState(initialSubject || null);
-  const [pendingMode, setPendingMode] = useState(null); // "automatic" | "manual"
+  const [pendingMode, setPendingMode] = useState(null);
   const [plan, setPlan] = useState(null);
   const [config, setConfig] = useState(null);
 
-  const handleModeSelect = (mode) => {
-    setPendingMode(mode);
-    setPhase("subject-select");
-  };
-
   const handleSubjectSelect = (subject) => {
     setSelectedSubject(subject);
-    if (pendingMode === "automatic") {
-      runAutomatic(subject);
+    setPhase("mode-select");
+  };
+
+  const handleModeSelect = (mode) => {
+    if (mode === "automatic") {
+      runAutomatic(selectedSubject);
     } else {
       setPhase("setup");
     }
@@ -169,7 +168,7 @@ Return a JSON object with this structure:
   };
 
   const handleReset = () => {
-    setPhase("mode-select");
+    setPhase("subject-select");
     setPlan(null);
     setConfig(null);
     setSelectedSubject(null);
@@ -177,9 +176,9 @@ Return a JSON object with this structure:
   };
 
   const handleBack = () => {
-    if (phase === "mode-select") onBack();
-    else if (phase === "subject-select") setPhase("mode-select");
-    else if (phase === "setup") setPhase("subject-select");
+    if (phase === "subject-select") onBack();
+    else if (phase === "mode-select") setPhase("subject-select");
+    else if (phase === "setup") setPhase("mode-select");
     else onBack();
   };
 
@@ -192,7 +191,7 @@ Return a JSON object with this structure:
           </Button>
           <h2 className="font-heading font-semibold text-foreground">
             Study Plan Generator
-            {selectedSubject && phase !== "mode-select" && phase !== "subject-select" && (
+            {selectedSubject && phase !== "subject-select" && (
               <span className="text-muted-foreground font-normal"> — {selectedSubject}</span>
             )}
           </h2>
@@ -202,7 +201,37 @@ Return a JSON object with this structure:
       <div className="py-8">
         <AnimatePresence mode="wait">
 
-          {/* Step 1: Automatic or Manual */}
+          {/* Step 1: Subject selection */}
+          {phase === "subject-select" && (
+            <motion.div
+              key="subject-select"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="max-w-xl mx-auto px-4"
+            >
+              <div className="text-center mb-8">
+                <h2 className="font-heading text-2xl font-bold text-foreground mb-2">Choose a Subject</h2>
+                <p className="text-muted-foreground text-sm">Pick the subject you want to create a study plan for.</p>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {SUBJECTS.map((s) => (
+                  <button
+                    key={s.value}
+                    onClick={() => handleSubjectSelect(s.value)}
+                    className="flex flex-col items-center gap-2 bg-card border-2 border-border hover:border-primary rounded-2xl p-4 transition-all group"
+                  >
+                    <span className="text-3xl">{s.emoji}</span>
+                    <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors text-center leading-tight">
+                      {s.value}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 2: Automatic or Manual */}
           {phase === "mode-select" && (
             <motion.div
               key="mode-select"
@@ -247,36 +276,6 @@ Return a JSON object with this structure:
                     Set your own goal, duration, and daily study time for a custom plan.
                   </p>
                 </button>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Step 2: Subject selection */}
-          {phase === "subject-select" && (
-            <motion.div
-              key="subject-select"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="max-w-xl mx-auto px-4"
-            >
-              <div className="text-center mb-8">
-                <h2 className="font-heading text-2xl font-bold text-foreground mb-2">Choose a Subject</h2>
-                <p className="text-muted-foreground text-sm">Pick the subject you want to create a study plan for.</p>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {SUBJECTS.map((s) => (
-                  <button
-                    key={s.value}
-                    onClick={() => handleSubjectSelect(s.value)}
-                    className="flex flex-col items-center gap-2 bg-card border-2 border-border hover:border-primary rounded-2xl p-4 transition-all group"
-                  >
-                    <span className="text-3xl">{s.emoji}</span>
-                    <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors text-center leading-tight">
-                      {s.value}
-                    </span>
-                  </button>
-                ))}
               </div>
             </motion.div>
           )}
