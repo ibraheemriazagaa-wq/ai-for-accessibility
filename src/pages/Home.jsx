@@ -375,41 +375,9 @@ Student's question: ${question}`;
   const t = resolveText(uiTexts);
   const dir = isRTL(language) ? "rtl" : "ltr";
 
-  // Study plan subject picker
-  if (mode === "studyplan-subject") {
-    return (
-      <div className="min-h-screen bg-background" dir={dir}>
-        <div className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-10">
-          <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => setMode("tutor")} className="rounded-xl">
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <h2 className="font-heading font-semibold text-foreground">{t.studyPlanTitle}</h2>
-          </div>
-        </div>
-        <div className="max-w-2xl mx-auto px-4 py-8">
-          <p className="text-muted-foreground text-sm text-center mb-6">{t.studyPlanSubtitle}</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {subjects.map((subject) => (
-              <SubjectCard
-                key={subject}
-                subject={subject}
-                isSelected={false}
-                onClick={() => {
-                  setStudyPlanSubject(subjectLabels[subject]);
-                  setMode("studyplan");
-                }}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Study plan mode
   if (mode === "studyplan") {
-    return <StudyPlan subject={studyPlanSubject} onBack={() => setMode("studyplan-subject")} />;
+    return <StudyPlan subject={null} onBack={() => setMode("tutor")} />;
   }
 
   // Test subject picker
@@ -562,7 +530,7 @@ Student's question: ${question}`;
                 <ClipboardList className="w-4 h-4" />
                 {t.generateTest}
               </Button>
-              <Button variant="outline" onClick={() => setMode("studyplan-subject")} className="rounded-xl gap-2 text-sm">
+              <Button variant="outline" onClick={() => setMode("studyplan")} className="rounded-xl gap-2 text-sm">
                 <CalendarDays className="w-4 h-4" />
                 {t.studyPlan}
               </Button>
