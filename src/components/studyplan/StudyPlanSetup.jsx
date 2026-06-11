@@ -29,8 +29,8 @@ const dailyTimes = [
 ];
 const levels = ["Beginner", "Intermediate", "Advanced"];
 
-export default function StudyPlanSetup({ onGenerate }) {
-  const [subject, setSubject] = useState("");
+export default function StudyPlanSetup({ onGenerate, subject: initialSubject }) {
+  const [subject, setSubject] = useState(initialSubject || "");
   const [goal, setGoal] = useState("");
   const [duration, setDuration] = useState(14);
   const [dailyTime, setDailyTime] = useState(30);
@@ -52,27 +52,29 @@ export default function StudyPlanSetup({ onGenerate }) {
         <p className="text-muted-foreground text-sm">Tell us your goal and we'll build a personalized plan for you.</p>
       </div>
 
-      {/* Subject */}
-      <div className="mb-6">
-        <label className="block font-heading font-semibold text-sm text-foreground mb-3">
-          <BookOpen className="inline w-4 h-4 mr-1.5 text-primary" />Subject
-        </label>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {subjects.map((s) => (
-            <button
-              key={s.value}
-              onClick={() => setSubject(s.value)}
-              className={`px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
-                subject === s.value
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-card border-border text-foreground hover:border-primary/50"
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
+      {/* Subject — only show picker if not pre-selected */}
+      {!initialSubject && (
+        <div className="mb-6">
+          <label className="block font-heading font-semibold text-sm text-foreground mb-3">
+            <BookOpen className="inline w-4 h-4 mr-1.5 text-primary" />Subject
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {subjects.map((s) => (
+              <button
+                key={s.value}
+                onClick={() => setSubject(s.value)}
+                className={`px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
+                  subject === s.value
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card border-border text-foreground hover:border-primary/50"
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Goal */}
       <div className="mb-6">
