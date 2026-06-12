@@ -245,7 +245,21 @@ export default function Home() {
       }
     }
     setSelectedSubject(subject);
-    setMessages([]);
+    const intro = formatIntro(subject, subjectLabels[subject]);
+    const introMessage = { role: "assistant", content: intro, originalContent: intro, language };
+    // If language is non-English, translate the intro asynchronously
+    if (language !== "english") {
+      base44.integrations.Core.InvokeLLM({
+        prompt: `Translate the following message into ${language} language. Preserve all markdown formatting. Return ONLY the translated text, nothing else.\n\nMessage: ${intro}`,
+      }).then((translated) => {
+        setMessages([{ role: "assistant", content: translated, originalContent: intro, language }]);
+        speak(translated);
+      });
+      setMessages([introMessage]);
+    } else {
+      setMessages([introMessage]);
+      speak(intro);
+    }
     setTranslatedSuggestions(null);
   };
 
@@ -616,6 +630,10 @@ Student's question: ${question}`;
       />
     </div>
   );
+}
+
+function formatIntro(subjectKey, subjectLabel) {
+  return `Hi there! I'm **Tutor Bot Pro**, your personal AI tutor for **${subjectLabel}**. I'm here to help you learn in a simple and fun way. Ask me anything about ${subjectLabel} — no question is too basic. Let's get started! 🚀`;
 }
 
 function getPromptSuggestions(subject) {
