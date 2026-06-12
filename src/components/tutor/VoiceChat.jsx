@@ -36,15 +36,14 @@ export default function VoiceChat({ onSend, isLoading, language }) {
     const recognition = new SpeechRecognition();
     recognition.lang = locale;
     recognition.interimResults = true;
-    recognition.continuous = false;
+    recognition.continuous = true;
+    recognition.interimResults = true;
     recognitionRef.current = recognition;
 
     recognition.onresult = (e) => {
       const t = Array.from(e.results).map((r) => r[0].transcript).join("");
       setTranscript(t);
     };
-
-    recognition.onspeechend = () => recognition.stop();
 
     recognition.onend = () => setListening(false);
 
@@ -123,7 +122,7 @@ export default function VoiceChat({ onSend, isLoading, language }) {
 
               <h3 className="font-heading font-bold text-lg text-foreground mb-1">Voice Chat</h3>
               <p className="text-muted-foreground text-sm mb-1">
-                Tap the mic, speak your question, then send it
+                Tap the mic, speak your question, then tap to stop
               </p>
               <p className="text-xs text-muted-foreground mb-5">
                 Recognition language: <span className="font-semibold text-foreground">{locale}</span>
