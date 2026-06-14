@@ -13,6 +13,7 @@ const RECOGNITION_LOCALES = {
 export default function VoiceChat({ onSend, isLoading, language }) {
   const [open, setOpen] = useState(false);
   const [listening, setListening] = useState(false);
+  const [transcript, setTranscript] = useState("");
   const recognitionRef = useRef(null);
 
   const locale = RECOGNITION_LOCALES[language] || "en-US";
@@ -42,13 +43,14 @@ export default function VoiceChat({ onSend, isLoading, language }) {
 
     recognition.onend = () => {
       setListening(false);
+      setTranscript("");
       recognitionRef.current = null;
       // Auto-send: get final transcript from results
       const results = recognition._lastResults;
       if (results) {
-        const transcript = Array.from(results).map((r) => r[0].transcript).join("").trim();
-        if (transcript) {
-          onSend(transcript);
+        const text = Array.from(results).map((r) => r[0].transcript).join("").trim();
+        if (text) {
+          onSend(text);
           setOpen(false);
         }
       }
@@ -64,16 +66,19 @@ export default function VoiceChat({ onSend, isLoading, language }) {
         fallback.continuous = false;
         fallback.onresult = (ev) => {
           fallback._lastResults = ev.results;
+          const text = Array.from(ev.results).map((r) => r[0].transcript).join("");
+          setTranscript(text);
         };
         fallback.onspeechend = () => { try { fallback.stop(); } catch {} };
         fallback.onend = () => {
           setListening(false);
+          setTranscript("");
           recognitionRef.current = null;
           const results = fallback._lastResults;
           if (results) {
-            const transcript = Array.from(results).map((r) => r[0].transcript).join("").trim();
-            if (transcript) {
-              onSend(transcript);
+            const text = Array.from(results).map((r) => r[0].transcript).join("").trim();
+            if (text) {
+              onSend(text);
               setOpen(false);
             }
           }
@@ -87,6 +92,8 @@ export default function VoiceChat({ onSend, isLoading, language }) {
 
     recognition.onresult = (e) => {
       recognition._lastResults = e.results;
+      const text = Array.from(e.results).map((r) => r[0].transcript).join("");
+      setTranscript(text);
     };
 
     recognition.start();
@@ -96,6 +103,7 @@ export default function VoiceChat({ onSend, isLoading, language }) {
   const handleClose = () => {
     stopListening();
     setOpen(false);
+    setTranscript("");
   };
 
   return (
@@ -167,6 +175,16 @@ export default function VoiceChat({ onSend, isLoading, language }) {
                       />
                     ))}
                   </div>
+                )}
+
+                {listening && transcript && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-muted/50 rounded-xl px-4 py-3 max-w-xs text-center"
+                  >
+                    <p className="text-sm text-foreground italic">"{transcript}"</p>
+                  </motion.div>
                 )}
 
                 <p className="text-sm text-muted-foreground">
