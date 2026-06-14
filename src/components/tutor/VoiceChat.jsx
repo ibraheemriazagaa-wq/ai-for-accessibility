@@ -36,8 +36,7 @@ export default function VoiceChat({ onSend, isLoading, language }) {
     const recognition = new SpeechRecognition();
     recognition.lang = locale;
     recognition.interimResults = true;
-    recognition.continuous = true;
-    recognition.interimResults = true;
+    recognition.continuous = false;
     recognitionRef.current = recognition;
 
     recognition.onresult = (e) => {
@@ -45,9 +44,16 @@ export default function VoiceChat({ onSend, isLoading, language }) {
       setTranscript(t);
     };
 
-    recognition.onend = () => setListening(false);
+    recognition.onspeechend = () => {
+      recognition.stop();
+    };
+
+    recognition.onend = () => {
+      setListening(false);
+    };
 
     recognition.onerror = (e) => {
+      console.error("Speech recognition error:", e.error);
       setListening(false);
       if (e.error === "language-not-supported") {
         // Fallback to English recognition
