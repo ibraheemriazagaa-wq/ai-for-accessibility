@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Mic, MicOff, X } from "lucide-react";
+import { Mic, MicOff, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { LANGUAGE_LOCALES } from "@/components/tutor/TTSButton";
@@ -14,73 +14,94 @@ export default function VoiceChat({ onSend, isLoading, language }) {
   const [open, setOpen] = useState(false);
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
+  const [error, setError] = useState(null);
   const recognitionRef = useRef(null);
 
   const locale = RECOGNITION_LOCALES[language] || "en-US";
 
   const stopListening = () => {
-    recognitionRef.current?.stop();
+    try { recognitionRef.current?.stop(); } catch {}
+    recognitionRef.current = null;
     setListening(false);
   };
 
   const startListening = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in your browser. Please use Chrome.");
+      setError("Speech recognition not supported. Please use Chrome.");
       return;
     }
 
-    // Stop any ongoing TTS so it doesn't interfere with the mic
-    window.speechSynthesis?.cancel();
+    setError(null);
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = locale;
-    recognition.interimResults = true;
-    recognition.continuous = false;
-    recognitionRef.current = recognition;
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = locale;
+      recognition.interimResults = true;
+      recognition.continuous = false;
+      recognitionRef.current = recognition;
 
-    recognition.onresult = (e) => {
-      const t = Array.from(e.results).map((r) => r[0].transcript).join("");
-      setTranscript(t);
-    };
+      recognition.onresult = (e) => {
+        const t = Array.from(e.results).map((r) => r[0].transcript).join("");
+        setTranscript(t);
+      };
 
-    recognition.onspeechend = () => {
-      recognition.stop();
-    };
+      recognition.onspeechend = () => {
+        try { recognition.stop(); } catch {}
+      };
 
-    recognition.onend = () => {
+      recognition.onend = () => {
+        setListening(false);
+        recognitionRef.current = null;
+      };
+
+      recognition.onerror = (e) => {
+        setListening(false);
+        recognitionRef.current = null;
+        if (e.error === "not-allowed") {
+          setError("Microphone access denied. Please allow it in your browser settings.");
+        } else if (e.error === "language-not-supported") {
+          setError(null);
+          // Fallback to English
+          try {
+            const fallback = new SpeechRecognition();
+            fallback.lang = "en-US";
+            fallback.interimResults = true;
+            fallback.continuous = false;
+            fallback.onresult = (ev) => {
+              const t = Array.from(ev.results).map((r) => r[0].transcript).join("");
+              setTranscript(t);
+            };
+            fallback.onspeechend = () => { try { fallback.stop(); } catch {} };
+            fallback.onend = () => { setListening(false); recognitionRef.current = null; };
+            fallback.onerror = () => { setListening(false); recognitionRef.current = null; };
+            fallback.start();
+            recognitionRef.current = fallback;
+            setListening(true);
+          } catch {}
+        } else if (e.error === "no-speech") {
+          setError("No speech detected. Try again.");
+        } else if (e.error === "aborted") {
+          // User stopped manually, no error
+        } else {
+          setError("Recognition error: " + e.error);
+        }
+      };
+
+      recognition.start();
+      setListening(true);
+      setTranscript("");
+    } catch (err) {
+      setError("Could not start microphone. " + (err.message || ""));
       setListening(false);
-    };
-
-    recognition.onerror = (e) => {
-      console.error("Speech recognition error:", e.error);
-      setListening(false);
-      if (e.error === "language-not-supported") {
-        // Fallback to English recognition
-        const fallback = new SpeechRecognition();
-        fallback.lang = "en-US";
-        fallback.interimResults = true;
-        fallback.continuous = false;
-        fallback.onresult = (ev) => {
-          const t = Array.from(ev.results).map((r) => r[0].transcript).join("");
-          setTranscript(t);
-        };
-        fallback.onend = () => setListening(false);
-        fallback.start();
-        recognitionRef.current = fallback;
-        setListening(true);
-      }
-    };
-
-    recognition.start();
-    setListening(true);
-    setTranscript("");
+    }
   };
 
   const handleSend = () => {
     if (!transcript.trim()) return;
     onSend(transcript.trim());
     setTranscript("");
+    setError(null);
     setOpen(false);
   };
 
@@ -88,6 +109,7 @@ export default function VoiceChat({ onSend, isLoading, language }) {
     stopListening();
     setOpen(false);
     setTranscript("");
+    setError(null);
   };
 
   return (
@@ -95,7 +117,7 @@ export default function VoiceChat({ onSend, isLoading, language }) {
       <Button
         variant="outline"
         size="sm"
-        onClick={() => setOpen(true)}
+        onClick={() => { setOpen(true); setError(null); setTranscript(""); }}
         className="rounded-xl gap-1.5 text-xs font-semibold"
         title="Voice Chat"
       >
@@ -169,6 +191,14 @@ export default function VoiceChat({ onSend, isLoading, language }) {
                   {listening ? "Listening… tap to stop" : isLoading ? "Thinking…" : "Tap the mic to speak"}
                 </p>
               </div>
+
+              {/* Error message */}
+              {error && (
+                <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2 mb-4 text-red-700 text-xs">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </div>
+              )}
 
               {/* Transcript */}
               {transcript && (
