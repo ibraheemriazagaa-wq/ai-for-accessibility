@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Mic, MicOff, X, AlertCircle } from "lucide-react";
+import { Mic, MicOff, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { LANGUAGE_LOCALES } from "@/components/tutor/TTSButton";
@@ -13,8 +13,6 @@ const RECOGNITION_LOCALES = {
 export default function VoiceChat({ onSend, isLoading, language }) {
   const [open, setOpen] = useState(false);
   const [listening, setListening] = useState(false);
-  const [transcript, setTranscript] = useState("");
-  const [error, setError] = useState(null);
   const recognitionRef = useRef(null);
 
   const locale = RECOGNITION_LOCALES[language] || "en-US";
@@ -28,88 +26,76 @@ export default function VoiceChat({ onSend, isLoading, language }) {
   const startListening = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      setError("Speech recognition not supported. Please use Chrome.");
+      alert("Speech recognition is not supported in your browser. Please use Chrome.");
       return;
     }
 
-    setError(null);
+    const recognition = new SpeechRecognition();
+    recognition.lang = locale;
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognitionRef.current = recognition;
 
-    try {
-      const recognition = new SpeechRecognition();
-      recognition.lang = locale;
-      recognition.interimResults = true;
-      recognition.continuous = false;
-      recognitionRef.current = recognition;
+    recognition.onspeechend = () => {
+      try { recognition.stop(); } catch {}
+    };
 
-      recognition.onresult = (e) => {
-        const t = Array.from(e.results).map((r) => r[0].transcript).join("");
-        setTranscript(t);
-      };
-
-      recognition.onspeechend = () => {
-        try { recognition.stop(); } catch {}
-      };
-
-      recognition.onend = () => {
-        setListening(false);
-        recognitionRef.current = null;
-      };
-
-      recognition.onerror = (e) => {
-        setListening(false);
-        recognitionRef.current = null;
-        if (e.error === "not-allowed") {
-          setError("Microphone access denied. Please allow it in your browser settings.");
-        } else if (e.error === "language-not-supported") {
-          setError(null);
-          // Fallback to English
-          try {
-            const fallback = new SpeechRecognition();
-            fallback.lang = "en-US";
-            fallback.interimResults = true;
-            fallback.continuous = false;
-            fallback.onresult = (ev) => {
-              const t = Array.from(ev.results).map((r) => r[0].transcript).join("");
-              setTranscript(t);
-            };
-            fallback.onspeechend = () => { try { fallback.stop(); } catch {} };
-            fallback.onend = () => { setListening(false); recognitionRef.current = null; };
-            fallback.onerror = () => { setListening(false); recognitionRef.current = null; };
-            fallback.start();
-            recognitionRef.current = fallback;
-            setListening(true);
-          } catch {}
-        } else if (e.error === "no-speech") {
-          setError("No speech detected. Try again.");
-        } else if (e.error === "aborted") {
-          // User stopped manually, no error
-        } else {
-          setError("Recognition error: " + e.error);
-        }
-      };
-
-      recognition.start();
-      setListening(true);
-      setTranscript("");
-    } catch (err) {
-      setError("Could not start microphone. " + (err.message || ""));
+    recognition.onend = () => {
       setListening(false);
-    }
-  };
+      recognitionRef.current = null;
+      // Auto-send: get final transcript from results
+      const results = recognition._lastResults;
+      if (results) {
+        const transcript = Array.from(results).map((r) => r[0].transcript).join("").trim();
+        if (transcript) {
+          onSend(transcript);
+          setOpen(false);
+        }
+      }
+    };
 
-  const handleSend = () => {
-    if (!transcript.trim()) return;
-    onSend(transcript.trim());
-    setTranscript("");
-    setError(null);
-    setOpen(false);
+    recognition.onerror = (e) => {
+      setListening(false);
+      recognitionRef.current = null;
+      if (e.error === "language-not-supported") {
+        const fallback = new SpeechRecognition();
+        fallback.lang = "en-US";
+        fallback.interimResults = true;
+        fallback.continuous = false;
+        fallback.onresult = (ev) => {
+          fallback._lastResults = ev.results;
+        };
+        fallback.onspeechend = () => { try { fallback.stop(); } catch {} };
+        fallback.onend = () => {
+          setListening(false);
+          recognitionRef.current = null;
+          const results = fallback._lastResults;
+          if (results) {
+            const transcript = Array.from(results).map((r) => r[0].transcript).join("").trim();
+            if (transcript) {
+              onSend(transcript);
+              setOpen(false);
+            }
+          }
+        };
+        fallback.onerror = () => { setListening(false); recognitionRef.current = null; };
+        fallback.start();
+        recognitionRef.current = fallback;
+        setListening(true);
+      }
+    };
+
+    recognition.onresult = (e) => {
+      recognition._lastResults = e.results;
+    };
+
+    recognition.start();
+    setListening(true);
   };
 
   const handleClose = () => {
     stopListening();
     setOpen(false);
-    setTranscript("");
-    setError(null);
   };
 
   return (
@@ -117,7 +103,7 @@ export default function VoiceChat({ onSend, isLoading, language }) {
       <Button
         variant="outline"
         size="sm"
-        onClick={() => { setOpen(true); setError(null); setTranscript(""); }}
+        onClick={() => setOpen(true)}
         className="rounded-xl gap-1.5 text-xs font-semibold"
         title="Voice Chat"
       >
@@ -149,15 +135,11 @@ export default function VoiceChat({ onSend, isLoading, language }) {
               </button>
 
               <h3 className="font-heading font-bold text-lg text-foreground mb-1">Voice Chat</h3>
-              <p className="text-muted-foreground text-sm mb-1">
-                Tap the mic, speak your question, then tap to stop
-              </p>
-              <p className="text-xs text-muted-foreground mb-5">
-                Recognition language: <span className="font-semibold text-foreground">{locale}</span>
+              <p className="text-muted-foreground text-sm mb-5">
+                Tap the mic and speak — it sends automatically when you pause
               </p>
 
-              {/* Mic area */}
-              <div className="flex flex-col items-center gap-4 py-4">
+              <div className="flex flex-col items-center gap-4 py-6">
                 <motion.button
                   whileTap={{ scale: 0.92 }}
                   onClick={listening ? stopListening : startListening}
@@ -188,35 +170,9 @@ export default function VoiceChat({ onSend, isLoading, language }) {
                 )}
 
                 <p className="text-sm text-muted-foreground">
-                  {listening ? "Listening… tap to stop" : isLoading ? "Thinking…" : "Tap the mic to speak"}
+                  {listening ? "Listening…" : isLoading ? "Thinking…" : "Tap the mic to speak"}
                 </p>
               </div>
-
-              {/* Error message */}
-              {error && (
-                <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2 mb-4 text-red-700 text-xs">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              {/* Transcript */}
-              {transcript && (
-                <div className="bg-muted/50 rounded-xl px-4 py-3 mb-4">
-                  <p className="text-sm text-foreground italic">"{transcript}"</p>
-                </div>
-              )}
-
-              {/* Send button */}
-              {transcript && (
-                <Button
-                  onClick={handleSend}
-                  disabled={isLoading}
-                  className="w-full rounded-xl font-semibold"
-                >
-                  {isLoading ? "Thinking…" : "Send →"}
-                </Button>
-              )}
             </motion.div>
           </motion.div>
         )}
