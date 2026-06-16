@@ -329,10 +329,10 @@ export default function Home() {
       setMessages((prev) => prev.map((m, i) => i === prev.length - 1 ? { ...m, content: correctedQuestion } : m));
     }
 
-    // Detect video request
-    const videoRequest = /show.*video|video.*about|watch.*video|video.*explain|can.*see.*video|make.*video|create.*video|generate.*video/i.test(correctedQuestion);
+    // Detect visual request (image, picture, diagram, drawing, illustration, video)
+    const visualRequest = /show.*(?:picture|image|diagram|drawing|illustration|photo|visual|chart|graph)|(?:picture|image|diagram|drawing|illustration|photo|visual|chart|graph).*(?:of|about|for|show)|draw.*(?:picture|diagram|illustration)|(?:make|create|generate).*(?:picture|image|diagram|drawing|illustration)|put.*(?:picture|image|diagram)|show.*video|video.*about|watch.*video|video.*explain|can.*see.*(?:picture|image|diagram|video|drawing)|can you (?:show|draw|illustrate|picture)/i.test(correctedQuestion);
 
-    if (videoRequest) {
+    if (visualRequest) {
       // Ask LLM for a vivid visual description
       const imagePrompt = await base44.integrations.Core.InvokeLLM({
         prompt: `The student is studying ${subjectLabels[selectedSubject]} and asked: "${correctedQuestion}".
