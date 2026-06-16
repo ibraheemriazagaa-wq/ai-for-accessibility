@@ -400,7 +400,8 @@ STRICT RULES:
 - If the student asks for a quiz, test, exam, or to be tested: do NOT create a quiz yourself. Instead, tell them to use the "Generate a Test" button on the main menu to get a proper test.
 - Always be encouraging and make learning feel fun.
 - Keep answers clear and structured. Use bullet points or tables when listing vocabulary.
-- If the student doesn't specify a language, ask them which language they want to learn.${imageQualityCheck}
+- If the student doesn't specify a language, ask them which language they want to learn.
+- REFERENCE LINKS: When the topic has a clear authoritative source (Wikipedia article, official documentation, reputable educational site), include a single relevant link at the very end of your response using markdown: 🔗 **[Read more on Wikipedia](https://wikipedia.org/wiki/...)** or similar. Only add a link when it's genuinely helpful — don't force it for simple basics or greetings. Use real, functional URLs you're confident exist.${imageQualityCheck}
 ${conversationHistory}
 Student's question: ${correctedQuestion}`
       : `You are a friendly AI tutor for ${subjectLabels[selectedSubject]}.
@@ -425,6 +426,7 @@ STRICT RULES:
 - No unexplained jargon. If you use a technical term, immediately explain it.
 - If the student asks for a quiz, test, exam, or to be tested: do NOT create a quiz yourself. Instead, tell them to use the "Generate a Test" button on the main menu to get a proper test.
 - When the student says short follow-ups like "more", "tell me more", "continue", "go on", "elaborate", "explain with examples", "give examples", "what are some examples", "can you show me an example", or any similar brief request: do NOT ask for clarification. Instead, use the conversation history to understand what topic they're referring to and continue elaborating with more detail, examples, or related facts naturally. ALWAYS check the conversation history first before asking "what do you mean" — only ask for clarification if the history is empty and the request is genuinely ambiguous.
+- REFERENCE LINKS: When the topic has a clear authoritative source (Wikipedia article, official documentation, reputable educational site), include a single relevant link at the very end of your response using markdown: 🔗 **[Read more on Wikipedia](https://wikipedia.org/wiki/...)** or similar. Only add a link when it's genuinely helpful — don't force it for simple basics. Use real, functional URLs you're confident exist.
 - End with ONE short encouraging sentence.${imageQualityCheck}
 ${tutoringMode === "socratic"
   ? `- This is Socratic mode. Ask ONE guiding question. Do NOT give explanations, answers, or information.`
