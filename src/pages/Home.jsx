@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, Sparkles, ArrowLeft, Trash2, ClipboardList, CalendarDays, BarChart2, History } from "lucide-react";
+import { Sparkles, ArrowLeft, Trash2, ClipboardList, CalendarDays, BarChart2, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SubjectCard from "@/components/tutor/SubjectCard";
 import LanguageSelector from "@/components/tutor/LanguageSelector";
@@ -553,15 +553,9 @@ Student's question: ${question}`;
       {/* Top bar */}
       <div className="flex-shrink-0 border-b border-border bg-card/80 backdrop-blur-md">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-2 mr-auto">
-            <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-xl flex-shrink-0">
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <BookOpen className="w-4 h-4 text-primary hidden sm:block flex-shrink-0" />
-            <h2 className="font-heading font-semibold text-foreground text-sm truncate max-w-[140px]">
-              {translatedSubjectLabels[selectedSubject]}
-            </h2>
-          </div>
+          <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-xl flex-shrink-0 mr-auto">
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
           <div className="flex items-center gap-1.5" dir="ltr">
             <LanguageSelector value={language} onChange={setLanguage} />
             <Button
