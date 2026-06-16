@@ -66,7 +66,23 @@ export default function TestGenerator({ onBack, initialSubject }) {
 
     setPhase("loading");
 
-    const sectionPrompts = activeSections.map((sec, i) =>
+    // Autocorrect topic spellings
+    const topicEntries = activeSections.map((sec) => `${sec.subject} — "${sec.topic}"`).join("\n");
+    const correctionResult = await base44.integrations.Core.InvokeLLM({
+      prompt: `Correct any spelling mistakes in the following academic topics. Keep the meaning the same — only fix misspellings. Return a JSON object with key "topics" containing an array of the corrected topic strings in the same order.\n\nTopics:\n${topicEntries}`,
+      response_json_schema: {
+        type: "object",
+        properties: { topics: { type: "array", items: { type: "string" } } },
+      },
+    });
+
+    const correctedTopics = correctionResult?.topics || activeSections.map((s) => s.topic);
+
+    // Update sections with corrected topics
+    const correctedSections = activeSections.map((sec, i) => ({ ...sec, topic: correctedTopics[i] || sec.topic }));
+    setSections(correctedSections);
+
+    const sectionPrompts = correctedSections.map((sec, i) =>
       `Section ${i + 1}: ${sec.subject}${sec.topic ? ` — Topic: "${sec.topic}"` : ""}, Difficulty: ${sec.difficulty}, Format: ${sec.format}, Questions: ${sec.count}`
     ).join("\n");
 
