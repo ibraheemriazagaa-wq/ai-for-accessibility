@@ -325,6 +325,17 @@ export default function Home() {
       correctedQuestion = await base44.integrations.Core.InvokeLLM({
         prompt: `The student is studying ${subjectLabels[selectedSubject]}. They wrote: "${question}". Fix any spelling mistakes in academic/subject-specific terms ONLY. Do NOT change the meaning, wording, or grammar — only fix clearly misspelled topic terms. Return ONLY the corrected text. If nothing needs fixing, return the original text.`,
       }) || question;
+      // Update the displayed user message if corrected
+      if (correctedQuestion !== question) {
+        setMessages((prev) => {
+          const msgs = [...prev];
+          const last = msgs[msgs.length - 1];
+          if (last?.role === "user") {
+            msgs[msgs.length - 1] = { ...last, content: correctedQuestion };
+          }
+          return msgs;
+        });
+      }
     } catch (_) {}
 
     // Image quality check: when a photo is attached, instruct the LLM to check it first
