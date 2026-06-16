@@ -552,7 +552,7 @@ Student's question: ${question}`;
     <div className="h-screen flex flex-col bg-background" dir={dir}>
       {/* Top bar */}
       <div className="flex-shrink-0 border-b border-border bg-card/80 backdrop-blur-md">
-        <div className="max-w-3xl mx-auto px-3 py-2 flex items-center gap-1 flex-nowrap overflow-x-auto" dir="ltr">
+        <div className="px-3 py-2 flex items-center gap-1 flex-nowrap overflow-x-auto" dir="ltr">
           <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-xl flex-shrink-0">
             <ArrowLeft className="w-4 h-4" />
           </Button>
