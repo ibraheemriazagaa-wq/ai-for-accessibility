@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Loader2, Wand2, PenLine } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import StudyPlanSetup from "@/components/studyplan/StudyPlanSetup";
 import StudyPlanDisplay from "@/components/studyplan/StudyPlanDisplay";
@@ -54,74 +54,15 @@ const PLAN_JSON_SCHEMA = {
 };
 
 export default function StudyPlan({ onBack, subject: initialSubject }) {
-  // phases: subject-select | mode-select | setup | loading | plan
+  // phases: subject-select | setup | loading | plan
   const [phase, setPhase] = useState("subject-select");
   const [selectedSubject, setSelectedSubject] = useState(initialSubject || null);
-  const [pendingMode, setPendingMode] = useState(null);
   const [plan, setPlan] = useState(null);
   const [config, setConfig] = useState(null);
 
   const handleSubjectSelect = (subject) => {
     setSelectedSubject(subject);
-    setPhase("mode-select");
-  };
-
-  const handleModeSelect = (mode) => {
-    if (mode === "automatic") {
-      runAutomatic(selectedSubject);
-    } else {
-      setPhase("setup");
-    }
-  };
-
-  const handleAutomatic = async () => {
-    runAutomatic(selectedSubject);
-  };
-
-  const runAutomatic = async (subject) => {
-    setPhase("loading");
-
-    const prompt = `You are an expert study planner. Create a comprehensive, automatic study plan for a student studying ${subject}.
-
-Plan duration: 14 days
-Daily study time: 45 minutes
-
-Build a structured day-by-day ${subject} study plan that:
-- Starts from foundational concepts and builds progressively
-- Covers the most important topics in ${selectedSubject}
-- Includes a variety of task types: reading, practice problems, review, etc.
-- Is realistic and motivating
-
-Group days into 2 weeks. For each day, provide 2-4 specific, actionable study tasks focused on ${selectedSubject}.
-
-Return JSON with this structure:
-{
-  "title": "${subject} Study Plan",
-  "overview": "2-sentence overview of what this plan covers and the learning approach",
-  "weeks": [
-    {
-      "week": 1,
-      "theme": "week theme",
-      "days": [
-        {
-          "day": 1,
-          "label": "Day 1",
-          "focus": "main topic for this day",
-          "tasks": ["specific task 1", "specific task 2", "specific task 3"]
-        }
-      ]
-    }
-  ]
-}`;
-
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt,
-      response_json_schema: PLAN_JSON_SCHEMA,
-    });
-
-    setPlan(result);
-    setConfig({ mode: "automatic", subject });
-    setPhase("plan");
+    setPhase("setup");
   };
 
   const handleManualGenerate = async (cfg) => {
@@ -172,13 +113,12 @@ Return a JSON object with this structure:
     setPlan(null);
     setConfig(null);
     setSelectedSubject(null);
-    setPendingMode(null);
+
   };
 
   const handleBack = () => {
     if (phase === "subject-select") onBack();
-    else if (phase === "mode-select") setPhase("subject-select");
-    else if (phase === "setup") setPhase("mode-select");
+    else if (phase === "setup") setPhase("subject-select");
     else onBack();
   };
 
@@ -231,58 +171,9 @@ Return a JSON object with this structure:
             </motion.div>
           )}
 
-          {/* Step 2: Automatic or Manual */}
-          {phase === "mode-select" && (
-            <motion.div
-              key="mode-select"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="max-w-xl mx-auto px-4"
-            >
-              <div className="text-center mb-10">
-                <h2 className="font-heading text-2xl font-bold text-foreground mb-2">
-                  How should we build your study plan?
-                </h2>
-                <p className="text-muted-foreground text-sm">Choose how you'd like to set it up.</p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button
-                  onClick={() => handleModeSelect("automatic")}
-                  className="group text-left bg-card border-2 border-border hover:border-primary rounded-2xl p-6 transition-all"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                    <Wand2 className="w-6 h-6 text-primary" />
-                  </div>
-                  <h3 className="font-heading font-bold text-foreground mb-1">Automatic</h3>
-                  <p className="text-sm text-muted-foreground">
-                    The AI instantly builds a complete 14-day study plan for you.
-                  </p>
-                  <div className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary">
-                    Recommended ✨
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => handleModeSelect("manual")}
-                  className="group text-left bg-card border-2 border-border hover:border-primary rounded-2xl p-6 transition-all"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
-                    <PenLine className="w-6 h-6 text-accent" />
-                  </div>
-                  <h3 className="font-heading font-bold text-foreground mb-1">Manual</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Set your own goal, duration, and daily study time for a custom plan.
-                  </p>
-                </button>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Step 3 (manual only): Setup form */}
+          {/* Step 2: Setup form */}
           {phase === "setup" && (
-            <motion.div key="setup" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div key="setup" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               <StudyPlanSetup subject={selectedSubject} onGenerate={handleManualGenerate} />
             </motion.div>
           )}
