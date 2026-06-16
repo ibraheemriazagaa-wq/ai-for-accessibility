@@ -521,10 +521,10 @@ Student's question: ${correctedQuestion}`;
             <LanguageSelector value={language} onChange={setLanguage} />
             <button
               onClick={() => setInfoOpen(true)}
-              className="flex items-center justify-center w-9 h-9 rounded-full border border-border bg-card text-muted-foreground hover:text-primary hover:border-primary/50 transition-all"
-              title="How to use this app"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border bg-card text-muted-foreground hover:text-primary hover:border-primary/50 transition-all text-xs font-medium"
             >
-              <Info className="w-4 h-4" />
+              <Info className="w-3.5 h-3.5" />
+              Info
             </button>
           </motion.div>
 
