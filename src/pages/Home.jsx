@@ -627,7 +627,7 @@ Student's question: ${correctedQuestion}`);
                   <div className="flex items-center justify-between px-6 py-4 border-b border-border sticky top-0 bg-card rounded-t-2xl">
                     <div className="flex items-center gap-2">
                       <Info className="w-5 h-5 text-primary" />
-                      <h2 className="font-heading font-semibold text-foreground text-lg">How to Use Tutor Bot Pro</h2>
+                      <h2 className="font-heading font-semibold text-foreground text-lg">How to Use TutorBot Pro</h2>
                     </div>
                     <button onClick={() => setInfoOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
                       <X className="w-5 h-5" />
@@ -799,7 +799,7 @@ Student's question: ${correctedQuestion}`);
 }
 
 function formatIntro(subjectKey, subjectLabel) {
-  return `Hi there! 👋 I'm **Tutor Bot Pro**, your personal AI tutor for **${subjectLabel}**. I'm here to make learning simple, fun, and stress-free — whether you're curious about something new or need help understanding a tricky topic, I've got your back. Feel free to ask me anything!`;
+  return `Hi there! 👋 I'm **TutorBot Pro**, your personal AI tutor for **${subjectLabel}**. I'm here to make learning simple, fun, and stress-free — whether you're curious about something new or need help understanding a tricky topic, I've got your back. Feel free to ask me anything!`;
 }
 
 function getPromptSuggestions(subject) {
