@@ -649,7 +649,7 @@ Student's question: ${correctedQuestion}`);
                     </div>
                     <div>
                       <h3 className="font-heading font-semibold text-foreground mb-1.5">📷 Camera & 📎 File Upload</h3>
-                      <p className="text-muted-foreground">Use the camera button to take a photo of your homework, textbook, or notes — the tutor can see it and help you. Use the paperclip to attach any file from your device.</p>
+                      <p className="text-muted-foreground">Snap a photo of your homework, textbook, or notes — the tutor can see it and help you. Upload a file from your device using the paperclip button.</p>
                     </div>
                     <div>
                       <h3 className="font-heading font-semibold text-foreground mb-1.5">🗑️ Clear Chat</h3>
