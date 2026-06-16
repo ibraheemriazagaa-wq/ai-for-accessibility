@@ -336,34 +336,40 @@ export default function Home() {
     const visualRequest = /show.*(?:picture|image|diagram|drawing|illustration|photo|visual|chart|graph)|(?:picture|image|diagram|drawing|illustration|photo|visual|chart|graph).*(?:of|about|for|show)|draw.*(?:picture|diagram|illustration)|(?:make|create|generate).*(?:picture|image|diagram|drawing|illustration)|put.*(?:picture|image|diagram|in.*(?:picture|image|diagram))|show.*video|video.*about|watch.*video|video.*explain|can.*see.*(?:picture|image|diagram|video|drawing)|can you (?:show|draw|illustrate|picture)|visually|visualiz|make.*visual|display.*as.*(?:picture|image|diagram)|send.*(?:picture|image|diagram)|want.*(?:picture|image|diagram)|have a (?:picture|image|diagram)/i.test(correctedQuestion);
 
     if (visualRequest) {
-      // Ask LLM for a vivid visual description
-      const imagePrompt = await base44.integrations.Core.InvokeLLM({
-        prompt: `The student is studying ${subjectLabels[selectedSubject]} and asked: "${correctedQuestion}".${imageQualityCheck}
+      try {
+        // Ask LLM for a vivid visual description
+        const imagePrompt = await base44.integrations.Core.InvokeLLM({
+          prompt: `The student is studying ${subjectLabels[selectedSubject]} and asked: "${correctedQuestion}".${imageQualityCheck}
 Write a detailed visual description for an educational diagram or illustration about this topic, suitable for a student.
 Focus on what should be visually shown. Be specific and descriptive.
 Return ONLY the description, nothing else.`,
-        ...(fileUrls?.length ? { file_urls: fileUrls } : {}),
-      });
-
-      const [textRes, imageRes] = await Promise.all([
-        base44.integrations.Core.InvokeLLM({
-          prompt: `You are a tutor for ${subjectLabels[selectedSubject]}. The student asked: "${correctedQuestion}".${imageQualityCheck}
-Respond in ${language} language. Give a brief 2-3 sentence explanation to accompany a visual diagram of this topic. Keep it simple and encouraging.`,
           ...(fileUrls?.length ? { file_urls: fileUrls } : {}),
-        }),
-        base44.integrations.Core.GenerateImage({ prompt: imagePrompt + ", educational diagram, clear labels, clean illustration, bright colors" })
-      ]);
+        });
 
-      setMessages((prev) => [...prev, {
-        role: "assistant",
-        content: textRes,
-        originalContent: textRes,
-        imageUrl: imageRes.url,
-        language,
-      }]);
-      setIsLoading(false);
-      speak(textRes);
-      return;
+        const [textRes, imageRes] = await Promise.all([
+          base44.integrations.Core.InvokeLLM({
+            prompt: `You are a tutor for ${subjectLabels[selectedSubject]}. The student asked: "${correctedQuestion}".${imageQualityCheck}
+Respond in ${language} language. Give a brief 2-3 sentence explanation to accompany a visual diagram of this topic. Keep it simple and encouraging.`,
+            ...(fileUrls?.length ? { file_urls: fileUrls } : {}),
+          }),
+          base44.integrations.Core.GenerateImage({ prompt: imagePrompt + ", educational diagram, clear labels, clean illustration, bright colors" })
+        ]);
+
+        setMessages((prev) => [...prev, {
+          role: "assistant",
+          content: textRes,
+          originalContent: textRes,
+          imageUrl: imageRes.url,
+          language,
+        }]);
+        setIsLoading(false);
+        speak(textRes);
+        return;
+      } catch (_) {
+        setMessages((prev) => [...prev, { role: "assistant", content: "⚠️ Oops, something went wrong. Please try again in a moment.", originalContent: "⚠️ Oops, something went wrong. Please try again in a moment.", language }]);
+        setIsLoading(false);
+        return;
+      }
     }
 
     const detailRequest = /more detail|explain more|elaborate|in depth|deeper|expand|tell me more|explain further|can you explain|detailed|thoroughly|fully explain|explain with examples|give.*examples|show.*examples|what.*example/i.test(correctedQuestion);
@@ -435,13 +441,18 @@ ${tutoringMode === "socratic"
 ${conversationHistory}
 Student's question: ${correctedQuestion}`);
 
-    const response = await base44.integrations.Core.InvokeLLM({
-      prompt,
-      ...(fileUrls?.length ? { file_urls: fileUrls } : {}),
-    });
-    setMessages((prev) => [...prev, { role: "assistant", content: response, originalContent: response, language }]);
-    setIsLoading(false);
-    speak(response);
+    try {
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        ...(fileUrls?.length ? { file_urls: fileUrls } : {}),
+      });
+      setMessages((prev) => [...prev, { role: "assistant", content: response, originalContent: response, language }]);
+      setIsLoading(false);
+      speak(response);
+    } catch (_) {
+      setMessages((prev) => [...prev, { role: "assistant", content: "⚠️ Oops, something went wrong. Please try again in a moment.", originalContent: "⚠️ Oops, something went wrong. Please try again in a moment.", language }]);
+      setIsLoading(false);
+    }
   };
 
   const t = resolveText(uiTexts);
