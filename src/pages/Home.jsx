@@ -552,40 +552,35 @@ Student's question: ${question}`;
     <div className="h-screen flex flex-col bg-background" dir={dir}>
       {/* Top bar */}
       <div className="flex-shrink-0 border-b border-border bg-card/80 backdrop-blur-md">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-2 flex-wrap">
-          <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-xl flex-shrink-0 mr-auto">
+        <div className="max-w-3xl mx-auto px-3 py-2 flex items-center gap-1 flex-nowrap overflow-x-auto" dir="ltr">
+          <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-xl flex-shrink-0">
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <div className="flex items-center gap-1.5" dir="ltr">
-            <LanguageSelector value={language} onChange={setLanguage} />
-            <Button
-              variant={tutoringMode === "socratic" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setTutoringMode(tutoringMode === "direct" ? "socratic" : "direct")}
-              className="rounded-xl gap-1.5 text-xs font-semibold"
-              title={tutoringMode === "direct" ? "Switch to Socratic mode" : "Switch to Direct mode"}
-            >
-              {tutoringMode === "socratic" ? "💬" : "🎯"}
-              {tutoringMode === "socratic" ? t.socratic : t.direct}
-              <span className="font-normal opacity-60 ml-0.5">
-                — press for {tutoringMode === "direct" ? t.socratic : t.direct}
-              </span>
+          <LanguageSelector value={language} onChange={setLanguage} />
+          <Button
+            variant={tutoringMode === "socratic" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setTutoringMode(tutoringMode === "direct" ? "socratic" : "direct")}
+            className="rounded-xl gap-1 text-xs font-semibold px-2.5 flex-shrink-0"
+            title={tutoringMode === "direct" ? "Switch to Socratic mode" : "Switch to Direct mode"}
+          >
+            {tutoringMode === "socratic" ? "💬" : "🎯"}
+            {tutoringMode === "socratic" ? t.socratic : t.direct}
+          </Button>
+          <VoiceChat
+            onSend={handleSend}
+            isLoading={isLoading}
+            language={language}
+          />
+          <TTSButton language={language} />
+          <Button variant="ghost" size="icon" onClick={() => setHistoryPanelOpen(true)} className="rounded-xl text-muted-foreground flex-shrink-0" title="Chat History">
+            <History className="w-4 h-4" />
+          </Button>
+          {messages.length > 0 && (
+            <Button variant="ghost" size="icon" onClick={handleClearChat} className="rounded-xl text-muted-foreground flex-shrink-0">
+              <Trash2 className="w-4 h-4" />
             </Button>
-            <VoiceChat
-              onSend={handleSend}
-              isLoading={isLoading}
-              language={language}
-            />
-            <TTSButton language={language} />
-            <Button variant="ghost" size="icon" onClick={() => setHistoryPanelOpen(true)} className="rounded-xl text-muted-foreground" title="Chat History">
-              <History className="w-4 h-4" />
-            </Button>
-            {messages.length > 0 && (
-              <Button variant="ghost" size="icon" onClick={handleClearChat} className="rounded-xl text-muted-foreground">
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
+          )}
         </div>
       </div>
 
