@@ -552,20 +552,33 @@ Student's question: ${question}`;
     <div className="h-screen flex flex-col bg-background" dir={dir}>
       {/* Top bar */}
       <div className="flex-shrink-0 border-b border-border bg-card/80 backdrop-blur-md">
-        {/* Row 1: Back + Subject + Utility icons */}
-        <div className="max-w-3xl mx-auto px-4 pt-3 pb-1 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-xl">
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 mr-auto">
+            <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-xl flex-shrink-0">
               <ArrowLeft className="w-4 h-4" />
             </Button>
-            <div className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-primary" />
-              <h2 className="font-heading font-semibold text-foreground text-sm sm:text-base">
-                {translatedSubjectLabels[selectedSubject]}
-              </h2>
-            </div>
+            <BookOpen className="w-4 h-4 text-primary hidden sm:block flex-shrink-0" />
+            <h2 className="font-heading font-semibold text-foreground text-sm truncate max-w-[140px]">
+              {translatedSubjectLabels[selectedSubject]}
+            </h2>
           </div>
-          <div className="flex items-center gap-1" dir="ltr">
+          <div className="flex items-center gap-1.5" dir="ltr">
+            <LanguageSelector value={language} onChange={setLanguage} />
+            <Button
+              variant={tutoringMode === "socratic" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setTutoringMode(tutoringMode === "direct" ? "socratic" : "direct")}
+              className="rounded-xl gap-1.5 text-xs font-semibold"
+            >
+              {tutoringMode === "socratic" ? "💬" : "🎯"}
+              {tutoringMode === "socratic" ? t.socratic : t.direct}
+            </Button>
+            <VoiceChat
+              onSend={handleSend}
+              isLoading={isLoading}
+              language={language}
+            />
+            <TTSButton language={language} />
             <Button variant="ghost" size="icon" onClick={() => setHistoryPanelOpen(true)} className="rounded-xl text-muted-foreground" title="Chat History">
               <History className="w-4 h-4" />
             </Button>
@@ -575,39 +588,6 @@ Student's question: ${question}`;
               </Button>
             )}
           </div>
-        </div>
-
-        {/* Row 2: Language + Tutoring Mode + Voice + TTS */}
-        <div className="max-w-3xl mx-auto px-4 pb-3 flex items-center gap-2 flex-wrap" dir="ltr">
-          <LanguageSelector value={language} onChange={setLanguage} />
-          <div className="flex items-center bg-muted rounded-xl p-0.5 gap-0.5">
-            <button
-              onClick={() => setTutoringMode("direct")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                tutoringMode === "direct"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t.direct}
-            </button>
-            <button
-              onClick={() => setTutoringMode("socratic")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                tutoringMode === "socratic"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t.socratic}
-            </button>
-          </div>
-          <VoiceChat
-            onSend={handleSend}
-            isLoading={isLoading}
-            language={language}
-          />
-          <TTSButton language={language} />
         </div>
       </div>
 
