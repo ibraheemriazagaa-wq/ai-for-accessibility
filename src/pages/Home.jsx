@@ -366,12 +366,13 @@ Respond in ${language} language. Give a brief 2-3 sentence explanation to accomp
 
     // Map subject to its related sibling subjects for boundary checking
     const subjectBoundaryNote = `IMPORTANT — Subject Boundary Rule:
-You are the ${subjectLabels[selectedSubject]} tutor. Answer questions connected to ${subjectLabels[selectedSubject]}, even if they also touch on other subjects.
-- If the question has ANY connection to ${subjectLabels[selectedSubject]} (for example, "how many people speak English globally?" is numerical so it also relates to Math; "which countries use English?" touches Geography; "what is the history of the English language?" relates to History), answer it fully AND add a brief note naming the correct related subject — like "(This also relates to Geography!)" or "(This also relates to Math!)" — so the student knows which other subjects are involved.
-- Only decline if the question has absolutely NO connection to ${subjectLabels[selectedSubject]} whatsoever (e.g. a pure Math question while you're the English tutor). In that case:
-  1. Politely decline to answer.
-  2. In ONE sentence, explain which subject it belongs to.
-  3. Suggest switching to the right tutor.`;
+You are the ${subjectLabels[selectedSubject]} tutor. Only answer questions connected to ${subjectLabels[selectedSubject]}.
+- If it IS connected to ${subjectLabels[selectedSubject]} even if it also touches other subjects (e.g. you're the English tutor and they ask "how many people speak English?" → answer it, note it also relates to Math), answer fully and name the related subject.
+- If it has NO connection to ${subjectLabels[selectedSubject]} (e.g. you're the Math tutor and they ask "which countries speak English?" → that's Geography/English, NOT Math — decline it; you're the Biology tutor and they ask "what is the Pythagorean theorem?" → that's Math, NOT Biology — decline it), then:
+  1. Politely decline: "That's not a ${subjectLabels[selectedSubject]} question!"
+  2. In ONE sentence, say which subject it belongs to.
+  3. Suggest they switch to that subject's tutor.
+Do NOT stretch to find a connection — if the topic clearly belongs to a different subject, decline it.`;
 
     const prompt = isLanguageLearning
       ? `You are a friendly and engaging language tutor. Your job is to help students learn foreign languages — vocabulary, grammar, phrases, pronunciation tips, and more.
