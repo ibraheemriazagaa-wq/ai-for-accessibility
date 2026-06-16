@@ -314,8 +314,8 @@ export default function Home() {
     handleSend(question);
   };
 
-  const handleSend = async (question) => {
-    const userMessage = { role: "user", content: question, originalContent: question, language };
+  const handleSend = async (question, fileUrls) => {
+    const userMessage = { role: "user", content: question, originalContent: question, language, imageUrl: fileUrls?.[0] };
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
@@ -336,13 +336,15 @@ export default function Home() {
         prompt: `The student is studying ${subjectLabels[selectedSubject]} and asked: "${correctedQuestion}".
 Write a detailed visual description for an educational diagram or illustration about this topic, suitable for a student.
 Focus on what should be visually shown. Be specific and descriptive.
-Return ONLY the description, nothing else.`
+Return ONLY the description, nothing else.`,
+        ...(fileUrls?.length ? { file_urls: fileUrls } : {}),
       });
 
       const [textRes, imageRes] = await Promise.all([
         base44.integrations.Core.InvokeLLM({
           prompt: `You are a tutor for ${subjectLabels[selectedSubject]}. The student asked: "${correctedQuestion}".
-Respond in ${language} language. Give a brief 2-3 sentence explanation to accompany a visual diagram of this topic. Keep it simple and encouraging.`
+Respond in ${language} language. Give a brief 2-3 sentence explanation to accompany a visual diagram of this topic. Keep it simple and encouraging.`,
+          ...(fileUrls?.length ? { file_urls: fileUrls } : {}),
         }),
         base44.integrations.Core.GenerateImage({ prompt: imagePrompt + ", educational diagram, clear labels, clean illustration, bright colors" })
       ]);
@@ -428,7 +430,10 @@ ${tutoringMode === "socratic"
 ${conversationHistory}
 Student's question: ${correctedQuestion}`;
 
-    const response = await base44.integrations.Core.InvokeLLM({ prompt });
+    const response = await base44.integrations.Core.InvokeLLM({
+      prompt,
+      ...(fileUrls?.length ? { file_urls: fileUrls } : {}),
+    });
     setMessages((prev) => [...prev, { role: "assistant", content: response, originalContent: response, language }]);
     setIsLoading(false);
     speak(response);

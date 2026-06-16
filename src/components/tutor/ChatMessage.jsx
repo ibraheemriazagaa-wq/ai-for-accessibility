@@ -43,7 +43,16 @@ export default function ChatMessage({ message }) {
         }`}
       >
         {isUser ? (
-          <p className="text-sm leading-relaxed">{message.content}</p>
+          <>
+            <p className="text-sm leading-relaxed">{message.content}</p>
+            {message.imageUrl && (
+              <img
+                src={message.imageUrl}
+                alt="Uploaded"
+                className="mt-2 rounded-xl w-full max-w-xs border border-white/20"
+              />
+            )}
+          </>
         ) : (
           <>
             <ReactMarkdown
