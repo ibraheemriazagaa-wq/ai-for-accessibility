@@ -1,0 +1,22 @@
+{
+  "name": "TrackedRepo",
+  "type": "object",
+  "properties": {
+    "owner": {
+      "type": "string",
+      "description": "GitHub username or organization that owns the repo"
+    },
+    "repo": {
+      "type": "string",
+      "description": "Repository name"
+    },
+    "last_commit_sha": {
+      "type": "string",
+      "description": "SHA of the most recent commit we've already synced"
+    }
+  },
+  "required": [
+    "owner",
+    "repo"
+  ]
+}
