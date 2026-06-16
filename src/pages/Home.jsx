@@ -762,9 +762,7 @@ Student's question: ${correctedQuestion}`;
 }
 
 function formatIntro(subjectKey, subjectLabel) {
-  return `Hi there! I'm **Tutor Bot Pro**, your personal AI tutor for **${subjectLabel}**. I'm here to help you learn in a simple and fun way.
-
-I'm currently in **Direct** mode by default. Ask me anything about ${subjectLabel} — no question is too basic! 🚀`;
+  return `Hi there! 👋 I'm **Tutor Bot Pro**, your personal AI tutor for **${subjectLabel}**. I'm here to make learning simple, fun, and stress-free — whether you're curious about something new or need help understanding a tricky topic, I've got your back. Feel free to ask me anything!`;
 }
 
 function getPromptSuggestions(subject) {
