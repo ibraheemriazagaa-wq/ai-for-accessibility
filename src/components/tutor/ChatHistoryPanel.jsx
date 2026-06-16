@@ -23,6 +23,9 @@ export default function ChatHistoryPanel({ open, onClose, chatHistory, currentSu
   const [correctedTitles, setCorrectedTitles] = useState({});
   const titleCacheRef = useRef({});
 
+  // sessions is an array of message arrays for the current subject
+  const sessions = currentSubject ? (chatHistory[currentSubject] || []) : [];
+
   // Autocorrect topic terms in session titles (first user message) for chat history display
   useEffect(() => {
     if (!open || !currentSubject || !sessions.length) return;
@@ -53,9 +56,6 @@ export default function ChatHistoryPanel({ open, onClose, chatHistory, currentSu
 
   const subjectLabel = translatedSubjectLabel || subjectLabels[currentSubject] || currentSubject || "Subject";
   const subjectEmoji = subjectEmojis[currentSubject] || "📖";
-
-  // sessions is an array of message arrays for the current subject
-  const sessions = currentSubject ? (chatHistory[currentSubject] || []) : [];
 
   // Filter sessions: a session matches if any assistant message contains the search term
   const filteredSessions = search.trim()
