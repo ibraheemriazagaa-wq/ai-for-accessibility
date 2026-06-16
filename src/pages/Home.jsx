@@ -333,7 +333,7 @@ export default function Home() {
       : "";
 
     // Detect visual request (image, picture, diagram, drawing, illustration, video)
-    const visualRequest = /show.*(?:picture|image|diagram|drawing|illustration|photo|visual|chart|graph)|(?:picture|image|diagram|drawing|illustration|photo|visual|chart|graph).*(?:of|about|for|show)|draw.*(?:picture|diagram|illustration)|(?:make|create|generate).*(?:picture|image|diagram|drawing|illustration)|put.*(?:picture|image|diagram)|show.*video|video.*about|watch.*video|video.*explain|can.*see.*(?:picture|image|diagram|video|drawing)|can you (?:show|draw|illustrate|picture)/i.test(correctedQuestion);
+    const visualRequest = /show.*(?:picture|image|diagram|drawing|illustration|photo|visual|chart|graph)|(?:picture|image|diagram|drawing|illustration|photo|visual|chart|graph).*(?:of|about|for|show)|draw.*(?:picture|diagram|illustration)|(?:make|create|generate).*(?:picture|image|diagram|drawing|illustration)|put.*(?:picture|image|diagram|in.*(?:picture|image|diagram))|show.*video|video.*about|watch.*video|video.*explain|can.*see.*(?:picture|image|diagram|video|drawing)|can you (?:show|draw|illustrate|picture)|visually|visualiz|make.*visual|display.*as.*(?:picture|image|diagram)|send.*(?:picture|image|diagram)|want.*(?:picture|image|diagram)|have a (?:picture|image|diagram)/i.test(correctedQuestion);
 
     if (visualRequest) {
       // Ask LLM for a vivid visual description
