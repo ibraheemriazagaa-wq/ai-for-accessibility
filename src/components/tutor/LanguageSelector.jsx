@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Globe, ChevronDown, Search, X } from "lucide-react";
+import { Globe, ChevronDown, Search, X, Grid3X3 } from "lucide-react";
 
 const languages = [
   { value: "english", label: "🇬🇧 English" },
