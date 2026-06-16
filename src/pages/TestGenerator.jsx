@@ -151,7 +151,16 @@ Return JSON:
       },
     });
 
-    setTestData(result);
+    // Override topics with the corrected versions
+    const patchedResult = {
+      ...result,
+      sections: (result.sections || []).map((sec, i) => ({
+        ...sec,
+        topic: correctedTopics[i] || sec.topic,
+      })),
+    };
+
+    setTestData(patchedResult);
     setPhase("results");
   };
 
