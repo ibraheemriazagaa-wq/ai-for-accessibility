@@ -309,6 +309,11 @@ export default function Home() {
       prompt: `The student is studying ${subjectLabels[selectedSubject]}. They wrote: "${question}". Fix any spelling mistakes in academic/subject-specific terms ONLY. Do NOT change the meaning, wording, or grammar — only fix clearly misspelled topic terms. Return ONLY the corrected text. If nothing needs fixing, return the original text.`,
     }).then((result) => result || question).catch(() => question);
 
+    // Update the user message with corrected spelling if different
+    if (correctedQuestion !== question) {
+      setMessages((prev) => prev.map((m, i) => i === prev.length - 1 ? { ...m, content: correctedQuestion } : m));
+    }
+
     // Detect video request
     const videoRequest = /show.*video|video.*about|watch.*video|video.*explain|can.*see.*video|make.*video|create.*video|generate.*video/i.test(correctedQuestion);
 
