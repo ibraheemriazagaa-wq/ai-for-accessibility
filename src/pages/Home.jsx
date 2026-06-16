@@ -327,13 +327,18 @@ export default function Home() {
       }) || question;
     } catch (_) {}
 
+    // Image quality check: when a photo is attached, instruct the LLM to check it first
+    const imageQualityCheck = fileUrls?.length
+      ? `\n\nIMPORTANT — IMAGE QUALITY CHECK: The student has attached a photo. Before answering:\n- If the image is blurry, too dark, blank, or just a solid color with nothing useful to identify: respond ONLY with "I can't see the image clearly — could you please send it again?" in ${language} language. Do NOT try to guess or answer the question.\n- If the image is clear enough to understand: proceed to answer the question normally.`
+      : "";
+
     // Detect visual request (image, picture, diagram, drawing, illustration, video)
     const visualRequest = /show.*(?:picture|image|diagram|drawing|illustration|photo|visual|chart|graph)|(?:picture|image|diagram|drawing|illustration|photo|visual|chart|graph).*(?:of|about|for|show)|draw.*(?:picture|diagram|illustration)|(?:make|create|generate).*(?:picture|image|diagram|drawing|illustration)|put.*(?:picture|image|diagram)|show.*video|video.*about|watch.*video|video.*explain|can.*see.*(?:picture|image|diagram|video|drawing)|can you (?:show|draw|illustrate|picture)/i.test(correctedQuestion);
 
     if (visualRequest) {
       // Ask LLM for a vivid visual description
       const imagePrompt = await base44.integrations.Core.InvokeLLM({
-        prompt: `The student is studying ${subjectLabels[selectedSubject]} and asked: "${correctedQuestion}".
+        prompt: `The student is studying ${subjectLabels[selectedSubject]} and asked: "${correctedQuestion}".${imageQualityCheck}
 Write a detailed visual description for an educational diagram or illustration about this topic, suitable for a student.
 Focus on what should be visually shown. Be specific and descriptive.
 Return ONLY the description, nothing else.`,
@@ -342,7 +347,7 @@ Return ONLY the description, nothing else.`,
 
       const [textRes, imageRes] = await Promise.all([
         base44.integrations.Core.InvokeLLM({
-          prompt: `You are a tutor for ${subjectLabels[selectedSubject]}. The student asked: "${correctedQuestion}".
+          prompt: `You are a tutor for ${subjectLabels[selectedSubject]}. The student asked: "${correctedQuestion}".${imageQualityCheck}
 Respond in ${language} language. Give a brief 2-3 sentence explanation to accompany a visual diagram of this topic. Keep it simple and encouraging.`,
           ...(fileUrls?.length ? { file_urls: fileUrls } : {}),
         }),
@@ -378,7 +383,7 @@ You are the ${subjectLabels[selectedSubject]} tutor. Only answer questions conne
 - If it has NO connection to ${subjectLabels[selectedSubject]} (e.g. you're the Math tutor and they ask "which countries speak English?" → that's Geography/English, NOT Math — decline it; you're the Biology tutor and they ask "what is the Pythagorean theorem?" → that's Math, NOT Biology — decline it), then give a single flowing response like: "That's not a ${subjectLabels[selectedSubject]} question — it belongs to [subject], so I'd suggest switching to that subject's tutor."
 Do NOT stretch to find a connection — if the topic clearly belongs to a different subject, decline it.`;
 
-    const prompt = isLanguageLearning
+    const prompt = (isLanguageLearning
       ? `You are a friendly and engaging language tutor. Your job is to help students learn foreign languages — vocabulary, grammar, phrases, pronunciation tips, and more.
 
 STRICT RULES:
@@ -389,7 +394,7 @@ STRICT RULES:
 - If the student asks for a quiz, test, exam, or to be tested: do NOT create a quiz yourself. Instead, tell them to use the "Generate a Test" button on the main menu to get a proper test.
 - Always be encouraging and make learning feel fun.
 - Keep answers clear and structured. Use bullet points or tables when listing vocabulary.
-- If the student doesn't specify a language, ask them which language they want to learn.
+- If the student doesn't specify a language, ask them which language they want to learn.${imageQualityCheck}
 ${conversationHistory}
 Student's question: ${correctedQuestion}`
       : `You are a friendly AI tutor for ${subjectLabels[selectedSubject]}.
@@ -414,7 +419,7 @@ STRICT RULES:
 - No unexplained jargon. If you use a technical term, immediately explain it.
 - If the student asks for a quiz, test, exam, or to be tested: do NOT create a quiz yourself. Instead, tell them to use the "Generate a Test" button on the main menu to get a proper test.
 - When the student says short follow-ups like "more", "tell me more", "continue", "go on", "elaborate", "explain with examples", "give examples", "what are some examples", "can you show me an example", or any similar brief request: do NOT ask for clarification. Instead, use the conversation history to understand what topic they're referring to and continue elaborating with more detail, examples, or related facts naturally. ALWAYS check the conversation history first before asking "what do you mean" — only ask for clarification if the history is empty and the request is genuinely ambiguous.
-- End with ONE short encouraging sentence.
+- End with ONE short encouraging sentence.${imageQualityCheck}
 ${tutoringMode === "socratic"
   ? `- This is Socratic mode. Ask ONE guiding question. Do NOT give explanations, answers, or information.`
   : detailRequest
@@ -428,7 +433,7 @@ ${tutoringMode === "socratic"
 - Use bullet points only when listing steps or multiple items — max 4 bullets.
 - Never write long paragraphs.`}
 ${conversationHistory}
-Student's question: ${correctedQuestion}`;
+Student's question: ${correctedQuestion}`);
 
     const response = await base44.integrations.Core.InvokeLLM({
       prompt,
