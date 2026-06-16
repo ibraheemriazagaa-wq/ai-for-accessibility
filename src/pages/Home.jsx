@@ -35,6 +35,8 @@ const DEFAULT_UI_TEXT = {
   generateTest: "Generate a Test",
   studyPlan: "Study Plan",
   myProgress: "My Progress",
+  socratic: "Socratic",
+  direct: "Direct",
   readyToLearn: "Ready to learn {subject}!",
   chatSubtitle: "Ask any question and I'll explain it in simple words. No question is too basic!",
   askAbout: "Ask about {subject}...",
@@ -89,6 +91,7 @@ export default function Home() {
   const [studyPlanSubject, setStudyPlanSubject] = useState(null);
   const [testSubject, setTestSubject] = useState(null);
   const [dashboardSubject, setDashboardSubject] = useState(null);
+  const [tutoringMode, setTutoringMode] = useState("direct"); // "direct" or "socratic"
   const [uiTexts, setUiTexts] = useState(DEFAULT_UI_TEXT);
   const [translatedSuggestions, setTranslatedSuggestions] = useState(null);
   const [translatedSubjectLabels, setTranslatedSubjectLabels] = useState(subjectLabels);
@@ -364,6 +367,17 @@ Student's question: ${question}`
 
 ${subjectBoundaryNote}
 
+TEACHING MODE: You are currently in **${tutoringMode === "socratic" ? "Socratic" : "Direct"}** mode.
+${tutoringMode === "socratic"
+  ? `- Socratic mode means you NEVER give direct answers. Instead, ask the student guiding questions that lead them to discover the answer themselves.
+- Start by asking what they already know about the topic.
+- Ask one question at a time. Wait for their response before asking the next.
+- If they're stuck, give a small hint — but never the full answer.
+- Praise their effort and progress as they work through the problem.`
+  : `- Direct mode means you give clear, straightforward explanations right away.
+- Answer the question directly and concisely.
+- Use examples and analogies to make concepts easy to understand.`}
+
 STRICT RULES:
 - Respond ENTIRELY in ${language} language.
 - Use simple, clear language appropriate for a student.
@@ -371,12 +385,16 @@ STRICT RULES:
 - No unexplained jargon. If you use a technical term, immediately explain it.
 - If the student asks for a quiz, test, exam, or to be tested: do NOT create a quiz yourself. Instead, tell them to use the "Generate a Test" button on the main menu to get a proper test.
 - End with ONE short encouraging sentence.
-${detailRequest ? `- The student is asking for a DETAILED explanation. Provide a thorough, comprehensive response:
+${tutoringMode === "socratic"
+  ? `- This is Socratic mode. Ask ONE guiding question. Do NOT give explanations, answers, or information.`
+  : detailRequest
+    ? `- The student is asking for a DETAILED explanation. Provide a thorough, comprehensive response:
   * Cover all key concepts, sub-concepts, and nuances
   * Use multiple examples and analogies
   * Use numbered steps or bullet points where helpful
   * Include relevant background context
-  * Be as thorough as needed — do NOT limit length` : `- Keep your answer SHORT: 3–5 sentences max for simple questions.
+  * Be as thorough as needed — do NOT limit length`
+    : `- Keep your answer SHORT: 3–5 sentences max for simple questions.
 - Use bullet points only when listing steps or multiple items — max 4 bullets.
 - Never write long paragraphs.`}
 
@@ -548,6 +566,28 @@ Student's question: ${question}`;
           </div>
           <div className="flex items-center gap-2" dir="ltr">
             <LanguageSelector value={language} onChange={setLanguage} />
+            <div className="flex items-center bg-muted rounded-xl p-0.5 gap-0.5" dir="ltr">
+              <button
+                onClick={() => setTutoringMode("direct")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                  tutoringMode === "direct"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t.direct}
+              </button>
+              <button
+                onClick={() => setTutoringMode("socratic")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                  tutoringMode === "socratic"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t.socratic}
+              </button>
+            </div>
             <VoiceChat
               onSend={handleSend}
               isLoading={isLoading}
@@ -635,7 +675,13 @@ Student's question: ${question}`;
 }
 
 function formatIntro(subjectKey, subjectLabel) {
-  return `Hi there! I'm **Tutor Bot Pro**, your personal AI tutor for **${subjectLabel}**. I'm here to help you learn in a simple and fun way. Ask me anything about ${subjectLabel} — no question is too basic. Let's get started! 🚀`;
+  return `Hi there! I'm **Tutor Bot Pro**, your personal AI tutor for **${subjectLabel}**. I'm here to help you learn in a simple and fun way.
+
+**Two teaching modes available — tap to switch:**
+- 🎯 **Direct** — I'll give you straight, clear explanations right away. The fastest way to learn!
+- 💬 **Socratic** — I'll guide you by asking thoughtful questions, helping you discover the answer yourself.
+
+I'm currently in **Direct** mode by default. Ask me anything about ${subjectLabel} — no question is too basic! 🚀`;
 }
 
 function getPromptSuggestions(subject) {
