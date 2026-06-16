@@ -556,6 +556,9 @@ Student's question: ${question}`;
           <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-xl flex-shrink-0">
             <ArrowLeft className="w-4 h-4" />
           </Button>
+          <h2 className="font-heading font-semibold text-foreground text-sm truncate max-w-[100px] flex-shrink-0 mr-1">
+            {translatedSubjectLabels[selectedSubject]}
+          </h2>
           <div className="flex-1" />
           <LanguageSelector value={language} onChange={setLanguage} />
           <Button
