@@ -9,7 +9,7 @@ import TestResults from "@/components/test/TestResults";
 const ALL_SUBJECTS = [
   "Math", "English", "Biology", "Chemistry", "Physics", "History",
   "Geography", "Computer Science", "Islamic Studies", "Economics",
-  "Language Learning", "Art", "Music", "Literature", "Psychology",
+  "Language Learning", "Art", "Music", "Psychology",
 ];
 
 const DIFFICULTIES = ["Easy", "Medium", "Hard"];
