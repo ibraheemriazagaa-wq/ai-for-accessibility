@@ -365,8 +365,8 @@ Respond in ${language} language. Give a brief 2-3 sentence explanation to accomp
 
     const isLanguageLearning = selectedSubject === "language";
 
-    // Build conversation history (last 10 messages) for context-aware follow-ups
-    const historyMessages = messages.slice(-10);
+    // Build conversation history for context-aware follow-ups
+    const historyMessages = messages;
     const conversationHistory = historyMessages.length > 0
       ? `\nCONVERSATION HISTORY (previous messages for context):\n${historyMessages.map(m => `${m.role === "user" ? "Student" : "Tutor"}: ${m.originalContent || m.content}`).join("\n")}\n`
       : "";
