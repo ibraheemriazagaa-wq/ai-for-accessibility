@@ -332,6 +332,12 @@ export default function Home() {
       ? `\n\nIMPORTANT — IMAGE QUALITY CHECK: The student has attached a photo. Before answering:\n- If the image is blurry, too dark, blank, or just a solid color with nothing useful to identify: respond ONLY with "I can't see the image clearly — could you please send it again?" in ${language} language. Do NOT try to guess or answer the question.\n- If the image is clear enough to understand: proceed to answer the question normally.`
       : "";
 
+    // Detect help request — emphasize reference links
+    const helpRequest = /\bhelp\b/i.test(correctedQuestion);
+    const helpNote = helpRequest
+      ? `\n\nIMPORTANT — The student is explicitly asking for HELP. Include a reference link (Wikipedia or reputable educational site) at the end of your response in markdown format: 🔗 **[Read more on Wikipedia](https://wikipedia.org/wiki/...)**. Make sure the URL is real and functional.`
+      : "";
+
     // Detect visual request (image, picture, diagram, drawing, illustration, video)
     const visualRequest = /show.*(?:picture|image|diagram|drawing|illustration|photo|visual|chart|graph)|(?:picture|image|diagram|drawing|illustration|photo|visual|chart|graph).*(?:of|about|for|show)|draw.*(?:picture|diagram|illustration)|(?:make|create|generate).*(?:picture|image|diagram|drawing|illustration)|put.*(?:picture|image|diagram|in.*(?:picture|image|diagram))|show.*video|video.*about|watch.*video|video.*explain|can.*see.*(?:picture|image|diagram|video|drawing)|can you (?:show|draw|illustrate|picture)|visually|visualiz|make.*visual|display.*as.*(?:picture|image|diagram)|send.*(?:picture|image|diagram)|want.*(?:picture|image|diagram)|have a (?:picture|image|diagram)/i.test(correctedQuestion);
 
@@ -401,7 +407,7 @@ STRICT RULES:
 - Always be encouraging and make learning feel fun.
 - Keep answers clear and structured. Use bullet points or tables when listing vocabulary.
 - If the student doesn't specify a language, ask them which language they want to learn.
-- REFERENCE LINKS: When the topic has a clear authoritative source (Wikipedia article, official documentation, reputable educational site), include a single relevant link at the very end of your response using markdown: 🔗 **[Read more on Wikipedia](https://wikipedia.org/wiki/...)** or similar. Only add a link when it's genuinely helpful — don't force it for simple basics or greetings. Use real, functional URLs you're confident exist.${imageQualityCheck}
+- REFERENCE LINKS: When the topic has a clear authoritative source (Wikipedia article, official documentation, reputable educational site), include a single relevant link at the very end of your response using markdown: 🔗 **[Read more on Wikipedia](https://wikipedia.org/wiki/...)** or similar. Only add a link when it's genuinely helpful — don't force it for simple basics or greetings. Use real, functional URLs you're confident exist.${imageQualityCheck}${helpNote}
 ${conversationHistory}
 Student's question: ${correctedQuestion}`
       : `You are a friendly AI tutor for ${subjectLabels[selectedSubject]}.
@@ -427,7 +433,7 @@ STRICT RULES:
 - If the student asks for a quiz, test, exam, or to be tested: do NOT create a quiz yourself. Instead, tell them to use the "Generate a Test" button on the main menu to get a proper test.
 - When the student says short follow-ups like "more", "tell me more", "continue", "go on", "elaborate", "explain with examples", "give examples", "what are some examples", "can you show me an example", or any similar brief request: do NOT ask for clarification. Instead, use the conversation history to understand what topic they're referring to and continue elaborating with more detail, examples, or related facts naturally. ALWAYS check the conversation history first before asking "what do you mean" — only ask for clarification if the history is empty and the request is genuinely ambiguous.
 - REFERENCE LINKS: When the topic has a clear authoritative source (Wikipedia article, official documentation, reputable educational site), include a single relevant link at the very end of your response using markdown: 🔗 **[Read more on Wikipedia](https://wikipedia.org/wiki/...)** or similar. Only add a link when it's genuinely helpful — don't force it for simple basics. Use real, functional URLs you're confident exist.
-- End with ONE short encouraging sentence.${imageQualityCheck}
+- End with ONE short encouraging sentence.${imageQualityCheck}${helpNote}
 ${tutoringMode === "socratic"
   ? `- This is Socratic mode. Ask ONE guiding question. Do NOT give explanations, answers, or information.`
   : detailRequest
