@@ -16,7 +16,7 @@ const subjectEmojis = {
 };
 
 // chatHistory shape: { [subject]: Array<Array<message>> }  (list of sessions)
-export default function ChatHistoryPanel({ open, onClose, chatHistory, currentSubject, onNewChat, translatedSubjectLabel }) {
+export default function ChatHistoryPanel({ open, onClose, chatHistory, currentSubject, onLoadSession, onNewChat, translatedSubjectLabel }) {
   const [search, setSearch] = useState("");
   const [expandedSession, setExpandedSession] = useState(null);
 
@@ -129,23 +129,30 @@ export default function ChatHistoryPanel({ open, onClose, chatHistory, currentSu
 
                   return (
                     <div key={realIdx} className="rounded-xl border border-border overflow-hidden">
-                      <button
-                        className="w-full flex items-start gap-2 px-3 py-2.5 text-left bg-muted/30 hover:bg-muted/60 transition-colors"
-                        onClick={() => setExpandedSession(isExpanded ? null : realIdx)}
-                      >
-                        <div className="flex-shrink-0 w-5 h-5 rounded-lg flex items-center justify-center mt-0.5 bg-gradient-to-br from-accent to-emerald-500 text-white">
-                          <Bot className="w-2.5 h-2.5" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-foreground truncate">{title}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5 truncate">{preview}</p>
-                          <p className="text-xs text-muted-foreground/60 mt-0.5">{msgCount} response{msgCount !== 1 ? "s" : ""}</p>
-                        </div>
-                        {isExpanded
-                          ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
-                          : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
-                        }
-                      </button>
+                      <div className="flex items-stretch bg-muted/30 hover:bg-muted/60 transition-colors">
+                        <button
+                          className="flex-1 flex items-start gap-2 px-3 py-2.5 text-left"
+                          onClick={() => { onLoadSession(session); onClose(); }}
+                        >
+                          <div className="flex-shrink-0 w-5 h-5 rounded-lg flex items-center justify-center mt-0.5 bg-gradient-to-br from-accent to-emerald-500 text-white">
+                            <Bot className="w-2.5 h-2.5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-foreground truncate">{title}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5 truncate">{preview}</p>
+                            <p className="text-xs text-muted-foreground/60 mt-0.5">{msgCount} response{msgCount !== 1 ? "s" : ""}</p>
+                          </div>
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setExpandedSession(isExpanded ? null : realIdx); }}
+                          className="px-2 flex items-center text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {isExpanded
+                            ? <ChevronDown className="w-3.5 h-3.5" />
+                            : <ChevronRight className="w-3.5 h-3.5" />
+                          }
+                        </button>
+                      </div>
 
                       {isExpanded && (
                         <div className="px-3 py-2 space-y-2 bg-card border-t border-border">

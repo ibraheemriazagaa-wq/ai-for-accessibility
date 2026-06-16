@@ -293,6 +293,20 @@ export default function Home() {
     setMessages([]);
   };
 
+  const handleLoadSession = (session) => {
+    window.speechSynthesis.cancel();
+    // Archive current session before loading another
+    if (selectedSubject && messages.length > 0) {
+      if (!chatHistoryRef.current[selectedSubject]) chatHistoryRef.current[selectedSubject] = [];
+      chatHistoryRef.current[selectedSubject].push([...messages]);
+    }
+    // Remove the loaded session from history
+    if (selectedSubject && chatHistoryRef.current[selectedSubject]) {
+      chatHistoryRef.current[selectedSubject] = chatHistoryRef.current[selectedSubject].filter((s) => s !== session);
+    }
+    setMessages([...session]);
+  };
+
   // Detect language from voice transcript and auto-switch
   const handleVoiceSend = (question) => {
     // Try to detect language via recognition lang hint — VoiceChat passes detected lang
@@ -660,6 +674,7 @@ Student's question: ${correctedQuestion}`;
         chatHistory={chatHistoryRef.current}
         currentSubject={selectedSubject}
         onSelectSubject={(subject) => handleSubjectSelect(subject)}
+        onLoadSession={handleLoadSession}
         onNewChat={handleNewChat}
         translatedSubjectLabel={translatedSubjectLabels[selectedSubject]}
       />
