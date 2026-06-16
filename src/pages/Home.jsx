@@ -319,13 +319,21 @@ export default function Home() {
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
+    // Autocorrect misspelled topic terms in the user's question
+    let correctedQuestion = question;
+    try {
+      correctedQuestion = await base44.integrations.Core.InvokeLLM({
+        prompt: `The student is studying ${subjectLabels[selectedSubject]}. They wrote: "${question}". Fix any spelling mistakes in academic/subject-specific terms ONLY. Do NOT change the meaning, wording, or grammar — only fix clearly misspelled topic terms. Return ONLY the corrected text. If nothing needs fixing, return the original text.`,
+      }) || question;
+    } catch (_) {}
+
     // Detect visual request (image, picture, diagram, drawing, illustration, video)
-    const visualRequest = /show.*(?:picture|image|diagram|drawing|illustration|photo|visual|chart|graph)|(?:picture|image|diagram|drawing|illustration|photo|visual|chart|graph).*(?:of|about|for|show)|draw.*(?:picture|diagram|illustration)|(?:make|create|generate).*(?:picture|image|diagram|drawing|illustration)|put.*(?:picture|image|diagram)|show.*video|video.*about|watch.*video|video.*explain|can.*see.*(?:picture|image|diagram|video|drawing)|can you (?:show|draw|illustrate|picture)/i.test(question);
+    const visualRequest = /show.*(?:picture|image|diagram|drawing|illustration|photo|visual|chart|graph)|(?:picture|image|diagram|drawing|illustration|photo|visual|chart|graph).*(?:of|about|for|show)|draw.*(?:picture|diagram|illustration)|(?:make|create|generate).*(?:picture|image|diagram|drawing|illustration)|put.*(?:picture|image|diagram)|show.*video|video.*about|watch.*video|video.*explain|can.*see.*(?:picture|image|diagram|video|drawing)|can you (?:show|draw|illustrate|picture)/i.test(correctedQuestion);
 
     if (visualRequest) {
       // Ask LLM for a vivid visual description
       const imagePrompt = await base44.integrations.Core.InvokeLLM({
-        prompt: `The student is studying ${subjectLabels[selectedSubject]} and asked: "${question}".
+        prompt: `The student is studying ${subjectLabels[selectedSubject]} and asked: "${correctedQuestion}".
 Write a detailed visual description for an educational diagram or illustration about this topic, suitable for a student.
 Focus on what should be visually shown. Be specific and descriptive.
 Return ONLY the description, nothing else.`
@@ -333,7 +341,7 @@ Return ONLY the description, nothing else.`
 
       const [textRes, imageRes] = await Promise.all([
         base44.integrations.Core.InvokeLLM({
-          prompt: `You are a tutor for ${subjectLabels[selectedSubject]}. The student asked: "${question}".
+          prompt: `You are a tutor for ${subjectLabels[selectedSubject]}. The student asked: "${correctedQuestion}".
 Respond in ${language} language. Give a brief 2-3 sentence explanation to accompany a visual diagram of this topic. Keep it simple and encouraging.`
         }),
         base44.integrations.Core.GenerateImage({ prompt: imagePrompt + ", educational diagram, clear labels, clean illustration, bright colors" })
@@ -351,7 +359,7 @@ Respond in ${language} language. Give a brief 2-3 sentence explanation to accomp
       return;
     }
 
-    const detailRequest = /more detail|explain more|elaborate|in depth|deeper|expand|tell me more|explain further|can you explain|detailed|thoroughly|fully explain|explain with examples|give.*examples|show.*examples|what.*example/i.test(question);
+    const detailRequest = /more detail|explain more|elaborate|in depth|deeper|expand|tell me more|explain further|can you explain|detailed|thoroughly|fully explain|explain with examples|give.*examples|show.*examples|what.*example/i.test(correctedQuestion);
 
     const isLanguageLearning = selectedSubject === "language";
 
@@ -381,7 +389,7 @@ STRICT RULES:
 - Keep answers clear and structured. Use bullet points or tables when listing vocabulary.
 - If the student doesn't specify a language, ask them which language they want to learn.
 ${conversationHistory}
-Student's question: ${question}`
+Student's question: ${correctedQuestion}`
       : `You are a friendly AI tutor for ${subjectLabels[selectedSubject]}.
 
 ${subjectBoundaryNote}
@@ -418,7 +426,7 @@ ${tutoringMode === "socratic"
 - Use bullet points only when listing steps or multiple items — max 4 bullets.
 - Never write long paragraphs.`}
 ${conversationHistory}
-Student's question: ${question}`;
+Student's question: ${correctedQuestion}`;
 
     const response = await base44.integrations.Core.InvokeLLM({ prompt });
     setMessages((prev) => [...prev, { role: "assistant", content: response, originalContent: response, language }]);
