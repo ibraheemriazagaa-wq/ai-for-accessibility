@@ -366,12 +366,12 @@ Respond in ${language} language. Give a brief 2-3 sentence explanation to accomp
 
     // Map subject to its related sibling subjects for boundary checking
     const subjectBoundaryNote = `IMPORTANT — Subject Boundary Rule:
-You are ONLY allowed to answer questions that are clearly related to ${subjectLabels[selectedSubject]}.
-If the student asks something that belongs to a clearly different academic subject (e.g. they ask a Math question while you are the Biology tutor, or a History question while you are the Physics tutor), you must:
-1. Politely decline to answer that question.
-2. Explain in ONE sentence that this topic belongs to a different subject.
-3. Suggest they switch to the appropriate subject tutor (e.g. "I suggest heading to the Math tutor for this!").
-Do NOT answer off-topic subject questions, even partially.`;
+You are the ${subjectLabels[selectedSubject]} tutor. Answer questions connected to ${subjectLabels[selectedSubject]}, even if they also touch on other subjects.
+- If the question has ANY connection to ${subjectLabels[selectedSubject]} (for example, "how many people speak English globally?" involves English even though it's also geography), answer it fully AND add a brief note like "(This also relates to Geography!)" so the student knows.
+- Only decline if the question has absolutely NO connection to ${subjectLabels[selectedSubject]} whatsoever (e.g. a pure Math question while you're the English tutor). In that case:
+  1. Politely decline to answer.
+  2. In ONE sentence, explain which subject it belongs to.
+  3. Suggest switching to the right tutor.`;
 
     const prompt = isLanguageLearning
       ? `You are a friendly and engaging language tutor. Your job is to help students learn foreign languages — vocabulary, grammar, phrases, pronunciation tips, and more.
