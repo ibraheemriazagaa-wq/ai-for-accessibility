@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, MessageSquare, Plus, Search, Bot, ChevronDown, ChevronRight } from "lucide-react";
 
@@ -19,6 +20,36 @@ const subjectEmojis = {
 export default function ChatHistoryPanel({ open, onClose, chatHistory, currentSubject, onLoadSession, onNewChat, translatedSubjectLabel }) {
   const [search, setSearch] = useState("");
   const [expandedSession, setExpandedSession] = useState(null);
+  const [correctedTitles, setCorrectedTitles] = useState({});
+  const titleCacheRef = useRef({});
+
+  // Autocorrect topic terms in session titles (first user message) for chat history display
+  useEffect(() => {
+    if (!open || !currentSubject || !sessions.length) return;
+    const subjectLabel = translatedSubjectLabel || subjectLabels[currentSubject] || currentSubject;
+    const keysToFix = [];
+    sessions.forEach((session, idx) => {
+      const firstUser = session.find((m) => m.role === "user");
+      if (firstUser?.content && !titleCacheRef.current[idx]) {
+        keysToFix.push({ idx, text: firstUser.content });
+      }
+    });
+    if (!keysToFix.length) return;
+    const batch = keysToFix.map(({ idx, text }) => `[${idx}]: ${text}`).join("\n");
+    base44.integrations.Core.InvokeLLM({
+      prompt: `The student is studying ${subjectLabel}. Below are user messages from chat history. Fix any spelling mistakes in academic/subject-specific terms ONLY for each message. Do NOT change meaning, wording, or grammar — only fix clearly misspelled topic terms. Return a JSON object with keys as the message index numbers and values as the corrected text (or original if nothing needs fixing).\n\nMessages:\n${batch}`,
+      response_json_schema: {
+        type: "object",
+        properties: Object.fromEntries(keysToFix.map(({ idx }) => [idx, { type: "string" }])),
+      },
+    }).then((result) => {
+      if (!result) return;
+      Object.entries(result).forEach(([idx, txt]) => {
+        titleCacheRef.current[idx] = txt;
+      });
+      setCorrectedTitles({ ...titleCacheRef.current });
+    });
+  }, [open, sessions, currentSubject, translatedSubjectLabel]);
 
   const subjectLabel = translatedSubjectLabel || subjectLabels[currentSubject] || currentSubject || "Subject";
   const subjectEmoji = subjectEmojis[currentSubject] || "📖";
@@ -43,7 +74,8 @@ export default function ChatHistoryPanel({ open, onClose, chatHistory, currentSu
 
   const getSessionTitle = (session, idx) => {
     const firstUser = session.find((m) => m.role === "user");
-    return firstUser?.content?.slice(0, 40) + (firstUser?.content?.length > 40 ? "…" : "") || `Chat ${idx + 1}`;
+    const text = correctedTitles[idx] || firstUser?.content || null;
+    return text ? text.slice(0, 40) + (text.length > 40 ? "…" : "") : `Chat ${idx + 1}`;
   };
 
   return (
@@ -121,7 +153,7 @@ export default function ChatHistoryPanel({ open, onClose, chatHistory, currentSu
                 </div>
               ) : (
                 reversedSessions.map((session, i) => {
-                  const realIdx = filteredSessions.length - 1 - i;
+                  const realIdx = sessions.indexOf(session);
                   const isExpanded = expandedSession === realIdx;
                   const title = getSessionTitle(session, realIdx);
                   const preview = getSessionPreview(session);
