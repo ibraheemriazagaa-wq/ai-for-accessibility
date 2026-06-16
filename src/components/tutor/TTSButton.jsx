@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Volume2, VolumeX, X, ChevronDown, Play, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AnimatePresence, motion } from "framer-motion";
@@ -26,6 +27,7 @@ export default function TTSButton({ language }) {
   const [previewingVoice, setPreviewingVoice] = useState(null);
   const [speed, setSpeed] = useState(1.0);
   const synthRef = useRef(window.speechSynthesis);
+  const btnRef = useRef(null);
   const panelRef = useRef(null);
   const currentTextRef = useRef(null); // track text currently being spoken
   const charIndexRef = useRef(0); // track last spoken character index via boundary events
@@ -53,7 +55,10 @@ export default function TTSButton({ language }) {
   // Close panel on outside click — also stop speech
   useEffect(() => {
     const handler = (e) => {
-      if (panelRef.current && !panelRef.current.contains(e.target)) {
+      if (
+        panelRef.current && !panelRef.current.contains(e.target) &&
+        btnRef.current && !btnRef.current.contains(e.target)
+      ) {
         setOpen(false);
         synthRef.current.cancel();
         currentTextRef.current = null;
@@ -206,8 +211,21 @@ export default function TTSButton({ language }) {
     return () => { window.__ttsSpeak = null; };
   }, []);
 
+  // Calculate dropdown position from button
+  const [dropdownStyle, setDropdownStyle] = useState({});
+  useEffect(() => {
+    if (open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setDropdownStyle({
+        position: "fixed",
+        top: rect.bottom + 4,
+        right: window.innerWidth - rect.right,
+      });
+    }
+  }, [open]);
+
   return (
-    <div className="relative" dir="ltr" ref={panelRef}>
+    <div dir="ltr" ref={btnRef}>
       <Button
         variant={enabled ? "default" : "outline"}
         size="sm"
@@ -227,114 +245,119 @@ export default function TTSButton({ language }) {
         )}
       </Button>
 
-      <AnimatePresence>
-        {open && enabled && (
-          <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.96 }}
-            className="absolute right-0 top-11 z-50 bg-card border border-border rounded-2xl shadow-xl p-4 w-72"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <p className="font-heading font-semibold text-sm text-foreground">TTS Settings</p>
-              <button onClick={() => { setOpen(false); synthRef.current.cancel(); currentTextRef.current = null; }}>
-                <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-              </button>
-            </div>
-
-            {/* Speed slider */}
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-1.5">
-                <p className="text-xs font-semibold text-foreground">Speaking Speed</p>
-                <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-0.5 rounded-full">{speed.toFixed(1)}x</span>
+      {createPortal(
+        <AnimatePresence>
+          {open && enabled && (
+            <motion.div
+              ref={panelRef}
+              initial={{ opacity: 0, y: -8, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.96 }}
+              style={dropdownStyle}
+              className="z-50 bg-card border border-border rounded-2xl shadow-xl p-4 w-72"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <p className="font-heading font-semibold text-sm text-foreground">TTS Settings</p>
+                <button onClick={() => { setOpen(false); synthRef.current.cancel(); currentTextRef.current = null; }}>
+                  <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                </button>
               </div>
-              <input
-                type="range"
-                min="0.5"
-                max="2.0"
-                step="0.1"
-                value={speed}
-                onChange={(e) => {
-                  const newSpeed = parseFloat(e.target.value);
-                  setSpeed(newSpeed);
-                  speedRef.current = newSpeed;
-                  // Resume from last known word boundary position
-                  if (currentTextRef.current && synthRef.current.speaking) {
-                    const resumeText = currentTextRef.current.slice(charIndexRef.current);
-                    synthRef.current.cancel();
-                    setTimeout(() => {
-                      if (resumeText.trim()) speakRef.current(resumeText);
-                    }, 150);
-                  }
-                }}
-                className="w-full h-1.5 rounded-full appearance-none bg-muted cursor-pointer accent-primary"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground/60 mt-1">
-                <span>0.5x</span>
-                <span>1.0x</span>
-                <span>2.0x</span>
-              </div>
-            </div>
 
-            <p className="text-xs text-muted-foreground mb-3">
-              {langVoices.length > 0
-                ? <><span className="font-semibold text-foreground">{langVoices.length}</span> {language} voices available</>
-                : <><span className="font-semibold text-foreground">AI voice</span> will be used for {language}</>
-              }
-            </p>
-            <div className="max-h-64 overflow-y-auto space-y-1">
-              {langVoices.length === 0 ? (
-                <div
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs border border-primary bg-primary/10 text-primary"
-                >
-                  <div className="flex-1 text-left">
-                    <span className="font-medium">AI Voice ({language})</span>
-                    <span className="ml-2 opacity-60">via GenerateSpeech</span>
-                    <span className="ml-2 font-semibold">✓</span>
-                  </div>
-                  <button
-                    onClick={previewApiVoice}
-                    title="Preview AI voice"
-                    className={`flex-shrink-0 p-1 rounded-lg transition-colors ${apiPreviewing ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-primary"}`}
-                  >
-                    {apiPreviewing ? <Square className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current" />}
-                  </button>
+              {/* Speed slider */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-1.5">
+                  <p className="text-xs font-semibold text-foreground">Speaking Speed</p>
+                  <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-0.5 rounded-full">{speed.toFixed(1)}x</span>
                 </div>
-              ) : (
-                langVoices.map((v, idx) => {
-                  const isSelected = selectedVoice === v.name || (!selectedVoice && idx === 0);
-                  const isPreviewing = previewingVoice === v.name;
-                  return (
-                    <div
-                      key={v.name}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs border transition-all
-                        ${isSelected
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border text-muted-foreground hover:border-muted-foreground/40"}`}
-                    >
-                      <button
-                        className="flex-1 text-left"
-                        onClick={() => { setSelectedVoice(v.name); setOpen(false); synthRef.current.cancel(); setPreviewingVoice(null); }}
-                      >
-                        <span className="font-medium">{v.name}</span>
-                        <span className="ml-2 opacity-60">{v.lang}</span>
-                        {isSelected && <span className="ml-2 text-primary font-semibold">✓</span>}
-                      </button>
-                      <button
-                        onClick={() => previewVoice(v.name)}
-                        title="Preview this voice"
-                        className={`flex-shrink-0 p-1 rounded-lg transition-colors ${isPreviewing ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-primary"}`}
-                      >
-                        {isPreviewing ? <Square className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current" />}
-                      </button>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="2.0"
+                  step="0.1"
+                  value={speed}
+                  onChange={(e) => {
+                    const newSpeed = parseFloat(e.target.value);
+                    setSpeed(newSpeed);
+                    speedRef.current = newSpeed;
+                    // Resume from last known word boundary position
+                    if (currentTextRef.current && synthRef.current.speaking) {
+                      const resumeText = currentTextRef.current.slice(charIndexRef.current);
+                      synthRef.current.cancel();
+                      setTimeout(() => {
+                        if (resumeText.trim()) speakRef.current(resumeText);
+                      }, 150);
+                    }
+                  }}
+                  className="w-full h-1.5 rounded-full appearance-none bg-muted cursor-pointer accent-primary"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground/60 mt-1">
+                  <span>0.5x</span>
+                  <span>1.0x</span>
+                  <span>2.0x</span>
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground mb-3">
+                {langVoices.length > 0
+                  ? <><span className="font-semibold text-foreground">{langVoices.length}</span> {language} voices available</>
+                  : <><span className="font-semibold text-foreground">AI voice</span> will be used for {language}</>
+                }
+              </p>
+              <div className="max-h-64 overflow-y-auto space-y-1">
+                {langVoices.length === 0 ? (
+                  <div
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs border border-primary bg-primary/10 text-primary"
+                  >
+                    <div className="flex-1 text-left">
+                      <span className="font-medium">AI Voice ({language})</span>
+                      <span className="ml-2 opacity-60">via GenerateSpeech</span>
+                      <span className="ml-2 font-semibold">✓</span>
                     </div>
-                  );
-                })
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                    <button
+                      onClick={previewApiVoice}
+                      title="Preview AI voice"
+                      className={`flex-shrink-0 p-1 rounded-lg transition-colors ${apiPreviewing ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-primary"}`}
+                    >
+                      {apiPreviewing ? <Square className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current" />}
+                    </button>
+                  </div>
+                ) : (
+                  langVoices.map((v, idx) => {
+                    const isSelected = selectedVoice === v.name || (!selectedVoice && idx === 0);
+                    const isPreviewing = previewingVoice === v.name;
+                    return (
+                      <div
+                        key={v.name}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs border transition-all
+                          ${isSelected
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border text-muted-foreground hover:border-muted-foreground/40"}`}
+                      >
+                        <button
+                          className="flex-1 text-left"
+                          onClick={() => { setSelectedVoice(v.name); setOpen(false); synthRef.current.cancel(); setPreviewingVoice(null); }}
+                        >
+                          <span className="font-medium">{v.name}</span>
+                          <span className="ml-2 opacity-60">{v.lang}</span>
+                          {isSelected && <span className="ml-2 text-primary font-semibold">✓</span>}
+                        </button>
+                        <button
+                          onClick={() => previewVoice(v.name)}
+                          title="Preview this voice"
+                          className={`flex-shrink-0 p-1 rounded-lg transition-colors ${isPreviewing ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-primary"}`}
+                        >
+                          {isPreviewing ? <Square className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current" />}
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }
