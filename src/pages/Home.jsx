@@ -582,7 +582,7 @@ Student's question: ${question}`;
             <History className="w-4 h-4" />
           </Button>
           {messages.length > 0 && (
-            <Button variant="ghost" size="icon" onClick={handleClearChat} className="rounded-xl text-muted-foreground flex-shrink-0">
+            <Button variant="ghost" size="icon" onClick={handleClearChat} className="rounded-xl text-muted-foreground flex-shrink-0" title="Clear Chat">
               <Trash2 className="w-4 h-4" />
             </Button>
           )}
