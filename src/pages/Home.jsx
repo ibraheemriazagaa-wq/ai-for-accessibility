@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, Sparkles, ArrowLeft, Trash2, ClipboardList, CalendarDays, BarChart2, History } from "lucide-react";
+import { BookOpen, Sparkles, ArrowLeft, Trash2, ClipboardList, CalendarDays, BarChart2, History, Info, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SubjectCard from "@/components/tutor/SubjectCard";
 import LanguageSelector from "@/components/tutor/LanguageSelector";
@@ -87,6 +87,7 @@ export default function Home() {
   // chatHistoryRef: { [subject]: Array<Array<message>> } — each subject has a list of sessions
   const chatHistoryRef = useRef({});
   const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
   const [mode, setMode] = useState("tutor");
   const [studyPlanSubject, setStudyPlanSubject] = useState(null);
   const [testSubject, setTestSubject] = useState(null);
@@ -510,14 +511,21 @@ Student's question: ${correctedQuestion}`;
             </p>
           </motion.div>
 
-          {/* Language selector */}
+          {/* Language selector + Info */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="flex justify-center mb-10"
+            className="flex items-center justify-center gap-3 mb-10"
           >
             <LanguageSelector value={language} onChange={setLanguage} />
+            <button
+              onClick={() => setInfoOpen(true)}
+              className="flex items-center justify-center w-9 h-9 rounded-full border border-border bg-card text-muted-foreground hover:text-primary hover:border-primary/50 transition-all"
+              title="How to use this app"
+            >
+              <Info className="w-4 h-4" />
+            </button>
           </motion.div>
 
           {/* Subject grid */}
@@ -565,6 +573,78 @@ Student's question: ${correctedQuestion}`;
               </Button>
             </div>
           </motion.div>
+
+          {/* Info Dialog */}
+          <AnimatePresence>
+            {infoOpen && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+                onClick={() => setInfoOpen(false)}
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-border sticky top-0 bg-card rounded-t-2xl">
+                    <div className="flex items-center gap-2">
+                      <Info className="w-5 h-5 text-primary" />
+                      <h2 className="font-heading font-semibold text-foreground text-lg">How to Use Tutor Bot Pro</h2>
+                    </div>
+                    <button onClick={() => setInfoOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="px-6 py-5 space-y-6 text-sm text-foreground">
+                    <div>
+                      <h3 className="font-heading font-semibold text-foreground mb-1.5">🎓 Subjects</h3>
+                      <p className="text-muted-foreground">Tap any subject card to start a tutoring session. The AI tutor will introduce itself and you can ask any question about that subject.</p>
+                    </div>
+                    <div>
+                      <h3 className="font-heading font-semibold text-foreground mb-1.5">🌐 Language Selector</h3>
+                      <p className="text-muted-foreground">Choose your preferred language — the entire app (buttons, labels, tutor responses) will switch to that language.</p>
+                    </div>
+                    <div>
+                      <h3 className="font-heading font-semibold text-foreground mb-1.5">🎯 Direct / 💬 Socratic Modes</h3>
+                      <p className="text-muted-foreground"><strong>Direct:</strong> The tutor gives you clear, straightforward explanations right away.<br /><strong>Socratic:</strong> The tutor guides you with questions so you discover the answer yourself — great for deeper learning.</p>
+                    </div>
+                    <div>
+                      <h3 className="font-heading font-semibold text-foreground mb-1.5">🎤 Voice Input & 🔊 Text-to-Speech</h3>
+                      <p className="text-muted-foreground">Use the microphone button to speak your question, and the speaker button to have the tutor read responses aloud. Adjust voice and speed from the TTS settings.</p>
+                    </div>
+                    <div>
+                      <h3 className="font-heading font-semibold text-foreground mb-1.5">📋 Generate a Test</h3>
+                      <p className="text-muted-foreground">Create a custom test with multiple sections. Pick your subject, topic, difficulty, question type, and number of questions — then get an AI-generated test you can take and get scored on.</p>
+                    </div>
+                    <div>
+                      <h3 className="font-heading font-semibold text-foreground mb-1.5">📅 Study Plan</h3>
+                      <p className="text-muted-foreground">Generate a personalized study schedule. Set your goals, available time, and difficulty level to get a structured week-by-week learning plan.</p>
+                    </div>
+                    <div>
+                      <h3 className="font-heading font-semibold text-foreground mb-1.5">📊 My Progress</h3>
+                      <p className="text-muted-foreground">Track your test scores over time. View averages by subject, performance trends, and your complete test history.</p>
+                    </div>
+                    <div>
+                      <h3 className="font-heading font-semibold text-foreground mb-1.5">📜 Chat History</h3>
+                      <p className="text-muted-foreground">Access your previous conversations from the history icon in the chat view. Search, preview, and reload past sessions to continue where you left off.</p>
+                    </div>
+                    <div>
+                      <h3 className="font-heading font-semibold text-foreground mb-1.5">🗑️ Clear Chat</h3>
+                      <p className="text-muted-foreground">The trash icon clears the current conversation so you can start fresh on the same subject.</p>
+                    </div>
+                  </div>
+                  <div className="px-6 py-4 border-t border-border bg-muted/30 rounded-b-2xl">
+                    <Button onClick={() => setInfoOpen(false)} className="w-full rounded-xl">Got it!</Button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     );
@@ -683,10 +763,6 @@ Student's question: ${correctedQuestion}`;
 
 function formatIntro(subjectKey, subjectLabel) {
   return `Hi there! I'm **Tutor Bot Pro**, your personal AI tutor for **${subjectLabel}**. I'm here to help you learn in a simple and fun way.
-
-**Two teaching modes available — tap to switch:**
-- 🎯 **Direct** — I'll give you straight, clear explanations right away. The fastest way to learn!
-- 💬 **Socratic** — I'll guide you by asking thoughtful questions, helping you discover the answer yourself.
 
 I'm currently in **Direct** mode by default. Ask me anything about ${subjectLabel} — no question is too basic! 🚀`;
 }
