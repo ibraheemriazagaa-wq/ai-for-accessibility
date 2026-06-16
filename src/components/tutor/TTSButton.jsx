@@ -76,6 +76,7 @@ export default function TTSButton({ language }) {
     return normalized.startsWith(langPrefix);
   });
 
+  // Static sample phrases for common languages — falls back to dynamic translation for others
   const SAMPLE_PHRASES = {
     "en": "Hello! This is how I sound.", "ar": "مرحباً، هذا هو صوتي.",
     "fr": "Bonjour! Voici ma voix.", "es": "¡Hola! Así es como sueno.",
@@ -95,7 +96,28 @@ export default function TTSButton({ language }) {
     "hu": "Helló! Így hangzom.", "bn": "হ্যালো! এটি আমার কণ্ঠস্বর।",
     "sw": "Habari! Hivi ndivyo ninavyosikika.", "fil": "Kamusta! Ganito ang aking boses.",
   };
-  const samplePhrase = SAMPLE_PHRASES[langPrefix] || SAMPLE_PHRASES["en"];
+  const samplePhraseCache = useRef({ ...SAMPLE_PHRASES });
+  const [samplePhrase, setSamplePhrase] = useState(
+    () => samplePhraseCache.current[langPrefix] || samplePhraseCache.current["en"]
+  );
+
+  // Dynamically translate sample phrase for languages not in the static map
+  useEffect(() => {
+    if (samplePhraseCache.current[langPrefix]) {
+      setSamplePhrase(samplePhraseCache.current[langPrefix]);
+      return;
+    }
+    // Show English fallback immediately, translate in background
+    setSamplePhrase(samplePhraseCache.current["en"]);
+    base44.integrations.Core.InvokeLLM({
+      prompt: `Translate "Hello! This is how I sound." into ${language} language. Return ONLY the translated text, nothing else. Keep it natural and conversational — this will be read aloud by a TTS voice.`,
+    }).then((translated) => {
+      if (translated && typeof translated === "string") {
+        samplePhraseCache.current[langPrefix] = translated;
+        setSamplePhrase(translated);
+      }
+    });
+  }, [language, langPrefix]);
 
   const previewVoice = (voiceName) => {
     if (previewingVoice === voiceName) {
