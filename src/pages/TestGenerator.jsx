@@ -10,8 +10,6 @@ const ALL_SUBJECTS = [
   "Math", "English", "Biology", "Chemistry", "Physics", "History",
   "Geography", "Computer Science", "Islamic Studies", "Economics",
   "Language Learning", "Art", "Music", "Literature", "Psychology",
-  "Sociology", "Philosophy", "Political Science", "Business Studies",
-  "Environmental Science",
 ];
 
 const DIFFICULTIES = ["Easy", "Medium", "Hard"];
