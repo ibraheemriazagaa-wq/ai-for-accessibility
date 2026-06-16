@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2, Camera, Paperclip, X } from "lucide-react";
+import { Send, Loader2, Camera, Paperclip, X, FlipHorizontal } from "lucide-react";
 
 export default function ChatInput({ onSend, isLoading, placeholder }) {
   const [input, setInput] = useState("");
@@ -10,19 +10,20 @@ export default function ChatInput({ onSend, isLoading, placeholder }) {
   const [showCamera, setShowCamera] = useState(false);
   const [cameraStream, setCameraStream] = useState(null);
   const [cameraError, setCameraError] = useState(null);
+  const [facingMode, setFacingMode] = useState("user"); // "user" = front, "environment" = back
   const fileRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
   // Cleanup stream on unmount or close
-  const stopCamera = () => {
+  const stopCamera = useCallback(() => {
     if (cameraStream) {
       cameraStream.getTracks().forEach((t) => t.stop());
       setCameraStream(null);
     }
     setShowCamera(false);
     setCameraError(null);
-  };
+  }, [cameraStream]);
 
   useEffect(() => {
     return () => {
@@ -30,10 +31,23 @@ export default function ChatInput({ onSend, isLoading, placeholder }) {
     };
   }, [cameraStream]);
 
+  const startCameraStream = useCallback(async (facing) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: facing },
+      });
+      setCameraStream(stream);
+      return stream;
+    } catch (err) {
+      setCameraError("Could not access camera. Please check permissions.");
+      setShowCamera(false);
+      return null;
+    }
+  }, []);
+
   const openCamera = async () => {
     const isMobile = /Mobi|Android/i.test(navigator.userAgent);
     if (isMobile) {
-      // Mobile: use native camera via file input
       const input = document.createElement("input");
       input.type = "file";
       input.accept = "image/*";
@@ -42,15 +56,22 @@ export default function ChatInput({ onSend, isLoading, placeholder }) {
       input.click();
       return;
     }
-    // Desktop: open live webcam modal
     setCameraError(null);
     setShowCamera(true);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      setCameraStream(stream);
-    } catch (err) {
-      setCameraError("Could not access camera. Please check permissions.");
-      setShowCamera(false);
+    setFacingMode("user");
+    await startCameraStream("user");
+  };
+
+  const flipCamera = async () => {
+    // Stop current stream
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((t) => t.stop());
+    }
+    const newFacing = facingMode === "user" ? "environment" : "user";
+    setFacingMode(newFacing);
+    const stream = await startCameraStream(newFacing);
+    if (stream && videoRef.current) {
+      videoRef.current.srcObject = stream;
     }
   };
 
@@ -59,7 +80,7 @@ export default function ChatInput({ onSend, isLoading, placeholder }) {
     if (videoRef.current && cameraStream) {
       videoRef.current.srcObject = cameraStream;
     }
-  }, [cameraStream, showCamera]);
+  }, [cameraStream]);
 
   const capturePhoto = () => {
     const video = videoRef.current;
@@ -71,10 +92,11 @@ export default function ChatInput({ onSend, isLoading, placeholder }) {
     ctx.drawImage(video, 0, 0);
     canvas.toBlob(async (blob) => {
       if (!blob) return;
+      const file = new File([blob], "camera-photo.jpg", { type: "image/jpeg" });
       stopCamera();
       setUploading(true);
       try {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file: blob });
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
         const text = input.trim() || "📷 Photo";
         onSend(text, [file_url]);
         setInput("");
@@ -134,15 +156,27 @@ export default function ChatInput({ onSend, isLoading, placeholder }) {
           <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-2xl w-full max-w-md">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
               <h3 className="font-heading font-semibold text-foreground text-sm">Take a photo</h3>
-              <Button variant="ghost" size="icon" onClick={stopCamera} className="rounded-lg h-8 w-8">
-                <X className="w-4 h-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={flipCamera}
+                  className="rounded-lg h-8 w-8"
+                  title="Flip camera"
+                >
+                  <FlipHorizontal className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={stopCamera} className="rounded-lg h-8 w-8">
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
             <div className="relative bg-black">
               <video
                 ref={videoRef}
                 autoPlay
                 playsInline
+                muted
                 className="w-full aspect-[4/3] object-cover"
               />
             </div>
