@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ArrowLeft, Trash2, ClipboardList, CalendarDays, BarChart2, History } from "lucide-react";
+import { BookOpen, Sparkles, ArrowLeft, Trash2, ClipboardList, CalendarDays, BarChart2, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SubjectCard from "@/components/tutor/SubjectCard";
 import LanguageSelector from "@/components/tutor/LanguageSelector";
@@ -556,6 +556,7 @@ Student's question: ${question}`;
           <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-xl flex-shrink-0">
             <ArrowLeft className="w-4 h-4" />
           </Button>
+          <BookOpen className="w-4 h-4 text-primary flex-shrink-0" />
           <h2 className="font-heading font-semibold text-foreground text-sm truncate max-w-[100px] flex-shrink-0 mr-1">
             {translatedSubjectLabels[selectedSubject]}
           </h2>
