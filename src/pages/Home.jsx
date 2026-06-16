@@ -361,7 +361,7 @@ Respond in ${language} language. Give a brief 2-3 sentence explanation to accomp
       return;
     }
 
-    const detailRequest = /more detail|explain more|elaborate|in depth|deeper|expand|tell me more|explain further|can you explain|detailed|thoroughly|fully explain/i.test(correctedQuestion);
+    const detailRequest = /more detail|explain more|elaborate|in depth|deeper|expand|tell me more|explain further|can you explain|detailed|thoroughly|fully explain|explain with examples|give.*examples|show.*examples|what.*example/i.test(correctedQuestion);
 
     const isLanguageLearning = selectedSubject === "language";
 
@@ -413,7 +413,7 @@ STRICT RULES:
 - Always use relatable real-life examples or analogies.
 - No unexplained jargon. If you use a technical term, immediately explain it.
 - If the student asks for a quiz, test, exam, or to be tested: do NOT create a quiz yourself. Instead, tell them to use the "Generate a Test" button on the main menu to get a proper test.
-- When the student says "more", "tell me more", "continue", "go on", "elaborate", or similar short follow-ups: do NOT ask for clarification. Simply continue elaborating on the last topic you discussed — add more detail, examples, or related facts naturally.
+- When the student says short follow-ups like "more", "tell me more", "continue", "go on", "elaborate", "explain with examples", "give examples", "what are some examples", "can you show me an example", or any similar brief request: do NOT ask for clarification. Instead, use the conversation history to understand what topic they're referring to and continue elaborating with more detail, examples, or related facts naturally. ALWAYS check the conversation history first before asking "what do you mean" — only ask for clarification if the history is empty and the request is genuinely ambiguous.
 - End with ONE short encouraging sentence.
 ${tutoringMode === "socratic"
   ? `- This is Socratic mode. Ask ONE guiding question. Do NOT give explanations, answers, or information.`
