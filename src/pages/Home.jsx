@@ -648,6 +648,10 @@ Student's question: ${correctedQuestion}`);
                       <p className="text-muted-foreground">Access your previous conversations from the history icon in the chat view. Search, preview, and reload past sessions to continue where you left off.</p>
                     </div>
                     <div>
+                      <h3 className="font-heading font-semibold text-foreground mb-1.5">📷 Camera & 📎 File Upload</h3>
+                      <p className="text-muted-foreground">Use the camera button to take a photo of your homework, textbook, or notes — the tutor can see it and help you. Use the paperclip to attach any file from your device.</p>
+                    </div>
+                    <div>
                       <h3 className="font-heading font-semibold text-foreground mb-1.5">🗑️ Clear Chat</h3>
                       <p className="text-muted-foreground">The trash icon clears the current conversation so you can start fresh on the same subject.</p>
                     </div>
