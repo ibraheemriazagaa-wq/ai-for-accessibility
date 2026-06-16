@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Globe, ChevronDown, Search, X, Grid3X3 } from "lucide-react";
 
 const languages = [
@@ -361,7 +362,8 @@ const languages = [
 export default function LanguageSelector({ value, onChange }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const containerRef = useRef(null);
+  const dropdownRef = useRef(null);
+  const triggerRef = useRef(null);
   const inputRef = useRef(null);
 
   const selected = languages.find((l) => l.value === value);
@@ -376,7 +378,9 @@ export default function LanguageSelector({ value, onChange }) {
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
+      const hitDropdown = dropdownRef.current?.contains(e.target);
+      const hitTrigger = triggerRef.current?.contains(e.target);
+      if (!hitDropdown && !hitTrigger) {
         setOpen(false);
         setSearch("");
       }
@@ -392,15 +396,16 @@ export default function LanguageSelector({ value, onChange }) {
   };
 
   return (
-    <div className="flex items-center gap-3" ref={containerRef}>
+    <div className="flex items-center gap-3">
       <div className="flex items-center gap-2 text-muted-foreground">
         <Globe className="w-4 h-4" />
         <span className="text-sm font-medium hidden sm:block">Language:</span>
       </div>
 
-      <div className="relative">
+      <div>
         {/* Trigger */}
         <button
+          ref={triggerRef}
           onClick={() => setOpen((v) => !v)}
           className="flex items-center gap-2 h-9 px-3 rounded-md border border-input bg-card text-sm hover:bg-muted/50 transition-colors min-w-[140px] max-w-[180px]"
         >
@@ -409,10 +414,20 @@ export default function LanguageSelector({ value, onChange }) {
           </span>
           <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
+      </div>
 
-        {/* Dropdown */}
-        {open && (
-          <div className="absolute z-50 top-10 left-0 w-72 bg-popover border border-border rounded-xl shadow-xl overflow-hidden">
+      {/* Dropdown — portaled to avoid parent overflow clipping */}
+      {createPortal(
+        open && (
+          <div
+            ref={dropdownRef}
+            style={{
+              position: "fixed",
+              top: (triggerRef.current?.getBoundingClientRect().bottom ?? 0) + 4,
+              left: triggerRef.current?.getBoundingClientRect().left ?? 0,
+            }}
+            className="z-50 w-72 bg-popover border border-border rounded-xl shadow-xl overflow-hidden"
+          >
             {/* Search input */}
             <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
               <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
@@ -449,8 +464,9 @@ export default function LanguageSelector({ value, onChange }) {
               )}
             </div>
           </div>
-        )}
-      </div>
+        ),
+        document.body
+      )}
     </div>
   );
 }
