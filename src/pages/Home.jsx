@@ -569,9 +569,13 @@ Student's question: ${question}`;
               size="sm"
               onClick={() => setTutoringMode(tutoringMode === "direct" ? "socratic" : "direct")}
               className="rounded-xl gap-1.5 text-xs font-semibold"
+              title={tutoringMode === "direct" ? "Switch to Socratic mode" : "Switch to Direct mode"}
             >
               {tutoringMode === "socratic" ? "💬" : "🎯"}
               {tutoringMode === "socratic" ? t.socratic : t.direct}
+              <span className="font-normal opacity-60 ml-0.5">
+                — press for {tutoringMode === "direct" ? t.socratic : t.direct}
+              </span>
             </Button>
             <VoiceChat
               onSend={handleSend}
