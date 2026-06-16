@@ -64,6 +64,7 @@ export default function ChatInput({ onSend, isLoading, placeholder }) {
         className="h-12 w-12 rounded-xl text-muted-foreground hover:text-foreground flex-shrink-0"
         onClick={() => cameraRef.current?.click()}
         disabled={busy}
+        title="Take a photo"
       >
         <Camera className="w-5 h-5" />
       </Button>
@@ -72,6 +73,7 @@ export default function ChatInput({ onSend, isLoading, placeholder }) {
         size="icon"
         className="h-12 w-12 rounded-xl text-muted-foreground hover:text-foreground flex-shrink-0"
         onClick={() => fileRef.current?.click()}
+        title="Attach a file"
         disabled={busy}
       >
         <Paperclip className="w-5 h-5" />
