@@ -44,6 +44,16 @@ export default function TestGenerator({ onBack, initialSubject }) {
 
   const handleGenerate = async () => {
     const activeSections = sections;
+
+    // Validate all sections have a topic
+    const missingTopics = activeSections.filter((sec) => !sec.topic.trim());
+    if (missingTopics.length > 0) {
+      const sectionNums = activeSections.map((s, i) => (missingTopics.includes(s) ? i + 1 : null)).filter(Boolean);
+      const label = sectionNums.length === 1 ? `Section ${sectionNums[0]}` : `Sections ${sectionNums.join(", ")}`;
+      alert(`${label}: Topic is required. Please enter a topic before generating the test.`);
+      return;
+    }
+
     setPhase("loading");
 
     const sectionPrompts = activeSections.map((sec, i) =>
@@ -176,7 +186,7 @@ Return JSON:
                     {/* Topic */}
                     <div className="mb-4">
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 block">
-                        Topic <span className="font-normal normal-case">(optional)</span>
+                        Topic <span className="text-red-500">*</span>
                       </label>
                       <Input
                         value={sec.topic}
