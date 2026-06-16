@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Loader2, Plus, Trash2, FileText, CheckSquare, List, PenLine } from "lucide-react";
@@ -36,6 +36,8 @@ export default function TestGenerator({ onBack, initialSubject }) {
   const [sections, setSections] = useState([emptySection(initialSubject || "Math")]);
   const [phase, setPhase] = useState("setup");
   const [testData, setTestData] = useState(null);
+  const [topicErrors, setTopicErrors] = useState({});
+  const topicRefs = useRef({});
 
   const addSection = () => setSections((s) => [...s, emptySection()]);
   const removeSection = (id) => setSections((s) => s.filter((sec) => sec.id !== id));
@@ -46,13 +48,21 @@ export default function TestGenerator({ onBack, initialSubject }) {
     const activeSections = sections;
 
     // Validate all sections have a topic
-    const missingTopics = activeSections.filter((sec) => !sec.topic.trim());
-    if (missingTopics.length > 0) {
-      const sectionNums = activeSections.map((s, i) => (missingTopics.includes(s) ? i + 1 : null)).filter(Boolean);
-      const label = sectionNums.length === 1 ? `Section ${sectionNums[0]}` : `Sections ${sectionNums.join(", ")}`;
-      alert(`${label}: Topic is required. Please enter a topic before generating the test.`);
+    const errors = {};
+    activeSections.forEach((sec) => {
+      if (!sec.topic.trim()) errors[sec.id] = true;
+    });
+    if (Object.keys(errors).length > 0) {
+      setTopicErrors(errors);
+      // Focus the first section with a missing topic
+      const firstMissingId = Object.keys(errors)[0];
+      setTimeout(() => {
+        topicRefs.current[firstMissingId]?.focus();
+        topicRefs.current[firstMissingId]?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
       return;
     }
+    setTopicErrors({});
 
     setPhase("loading");
 
@@ -189,11 +199,18 @@ Return JSON:
                         Topic <span className="text-red-500">*</span>
                       </label>
                       <Input
+                        ref={(el) => { topicRefs.current[sec.id] = el; }}
                         value={sec.topic}
-                        onChange={(e) => updateSection(sec.id, "topic", e.target.value)}
+                        onChange={(e) => {
+                          updateSection(sec.id, "topic", e.target.value);
+                          if (topicErrors[sec.id]) setTopicErrors((prev) => { const next = { ...prev }; delete next[sec.id]; return next; });
+                        }}
                         placeholder={`e.g. specific topic in ${sec.subject}...`}
-                        className="rounded-xl bg-background text-sm h-9"
+                        className={`rounded-xl bg-background text-sm h-9 ${topicErrors[sec.id] ? "border-red-500 ring-1 ring-red-500" : ""}`}
                       />
+                      {topicErrors[sec.id] && (
+                        <p className="text-red-500 text-xs mt-1.5 font-medium">Topic is required</p>
+                      )}
                     </div>
 
                     {/* Difficulty */}
