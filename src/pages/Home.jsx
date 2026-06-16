@@ -365,6 +365,12 @@ Respond in ${language} language. Give a brief 2-3 sentence explanation to accomp
 
     const isLanguageLearning = selectedSubject === "language";
 
+    // Build conversation history (last 10 messages) for context-aware follow-ups
+    const historyMessages = messages.slice(-10);
+    const conversationHistory = historyMessages.length > 0
+      ? `\nCONVERSATION HISTORY (previous messages for context):\n${historyMessages.map(m => `${m.role === "user" ? "Student" : "Tutor"}: ${m.originalContent || m.content}`).join("\n")}\n`
+      : "";
+
     // Map subject to its related sibling subjects for boundary checking
     const subjectBoundaryNote = `IMPORTANT — Subject Boundary Rule:
 You are the ${subjectLabels[selectedSubject]} tutor. Only answer questions connected to ${subjectLabels[selectedSubject]}.
@@ -384,7 +390,7 @@ STRICT RULES:
 - Always be encouraging and make learning feel fun.
 - Keep answers clear and structured. Use bullet points or tables when listing vocabulary.
 - If the student doesn't specify a language, ask them which language they want to learn.
-
+${conversationHistory}
 Student's question: ${correctedQuestion}`
       : `You are a friendly AI tutor for ${subjectLabels[selectedSubject]}.
 
@@ -421,7 +427,7 @@ ${tutoringMode === "socratic"
     : `- Keep your answer SHORT: 3–5 sentences max for simple questions.
 - Use bullet points only when listing steps or multiple items — max 4 bullets.
 - Never write long paragraphs.`}
-
+${conversationHistory}
 Student's question: ${correctedQuestion}`;
 
     const response = await base44.integrations.Core.InvokeLLM({ prompt });
